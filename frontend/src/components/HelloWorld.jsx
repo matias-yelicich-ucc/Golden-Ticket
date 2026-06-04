@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/App.css';
 import { events } from '../constants/events';
@@ -26,6 +26,13 @@ const CalendarIcon = () => (
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="m7 10 5 5 5-5" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18 21v-2a6 6 0 0 0-12 0v2" />
+    <circle cx="12" cy="8" r="4" />
   </svg>
 );
 
@@ -62,8 +69,35 @@ const EventCard = ({ event }) => (
 function HelloWorld() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
+  const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const isAuthenticated = Boolean(localStorage.getItem('token'));
+  const profileMenuRef = useRef(null);
+
+  const currentUser = useMemo(() => {
+    if (!isAuthenticated) return null;
+
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null');
+    } catch {
+      return null;
+    }
+  }, [isAuthenticated]);
+
+  const userInitials = useMemo(() => {
+    if (!currentUser) return 'GT';
+
+    const rawName = [currentUser.nombre, currentUser.apellido].filter(Boolean).join(' ').trim();
+    if (!rawName) return 'GT';
+
+    return rawName
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || '')
+      .join('');
+  }, [currentUser]);
+
+  const isAdmin = currentUser?.rol === 'admin';
 
   const categories = useMemo(() => {
     const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));
@@ -81,8 +115,33 @@ function HelloWorld() {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    setMenuOpen(false);
     navigate('/login');
   };
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    const handleClickOutside = (event) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [menuOpen]);
 
   return (
     <main className="home-screen">
@@ -90,13 +149,46 @@ function HelloWorld() {
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
         <nav className="event-detail-nav">
           <Link to="/">Eventos</Link>
-          {isAuthenticated ? <Link to="/mis-entradas">Mis entradas</Link> : <Link to="/login">Iniciar sesion</Link>}
         </nav>
         <div className="event-detail-actions">
           {isAuthenticated ? (
-            <button type="button" onClick={handleLogout}>Cerrar sesion</button>
+            <div className="topbar-profile" ref={profileMenuRef}>
+              <button
+                type="button"
+                className="topbar-profile-trigger"
+                onClick={() => setMenuOpen((current) => !current)}
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+              >
+                <span className="topbar-profile-avatar">{userInitials}</span>
+                <span className="topbar-profile-name">{currentUser?.nombre || 'Mi perfil'}</span>
+                <ChevronIcon />
+              </button>
+
+              {menuOpen && (
+                <div className="topbar-profile-menu" role="menu">
+                  {isAdmin && (
+                    <button type="button" onClick={() => { setMenuOpen(false); navigate('/admin'); }}>
+                      <UserIcon />
+                      Ir al panel admin
+                    </button>
+                  )}
+                  <button type="button" onClick={() => { setMenuOpen(false); navigate('/mis-entradas'); }}>
+                    <UserIcon />
+                    Ver mis entradas
+                  </button>
+                  <button type="button" onClick={handleLogout}>
+                    <UserIcon />
+                    Cerrar sesion
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
-            <button type="button" onClick={() => navigate('/register')}>Crear cuenta</button>
+            <>
+              <button type="button" className="event-detail-login" onClick={() => navigate('/login')}>Iniciar sesion</button>
+              <button type="button" onClick={() => navigate('/register')}>Crear cuenta</button>
+            </>
           )}
         </div>
       </header>
