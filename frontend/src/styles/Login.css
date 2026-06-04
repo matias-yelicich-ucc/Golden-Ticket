@@ -141,6 +141,35 @@
   height: 20px;
 }
 
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #8f8778;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.password-toggle:hover {
+  color: #d4af37;
+}
+
+.password-toggle.has-error {
+  right: 40px;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
 .error-message {
   color: #e74c3c;
   font-size: 0.8rem;

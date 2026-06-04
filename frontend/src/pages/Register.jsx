@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import '../styles/Login.css';
 import { registerUser } from '../services/api/client';
 
+const EyeIcon = ({ open }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+    {!open && <path d="M4 4 20 20"></path>}
+  </svg>
+);
+
 function Register() {
   const [form, setForm] = useState({
     nombre: '',
@@ -10,6 +18,7 @@ function Register() {
     email: '',
     password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,8 +35,8 @@ function Register() {
     setLoading(true);
     try {
       await registerUser(form);
-      setSuccess('Cuenta creada con exito. Ahora podes iniciar sesion.');
-      setTimeout(() => navigate('/login'), 1200);
+      setSuccess('Cuenta creada con exito. Te llevamos a la home.');
+      setTimeout(() => navigate('/'), 1200);
     } catch (requestError) {
       setError(requestError.response?.data?.error || 'No se pudo registrar el usuario');
     } finally {
@@ -64,7 +73,24 @@ function Register() {
 
             <div className="input-group">
               <label className="input-label" htmlFor="register-password">Contrasena</label>
-              <input id="register-password" type="password" className="login-input" value={form.password} onChange={(e) => handleChange('password', e.target.value)} />
+              <div className="input-wrapper">
+                <input
+                  id="register-password"
+                  type={showPassword ? 'text' : 'password'}
+                  className="login-input"
+                  value={form.password}
+                  onChange={(e) => handleChange('password', e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                  aria-pressed={showPassword}
+                >
+                  <EyeIcon open={showPassword} />
+                </button>
+              </div>
             </div>
 
             <button type="submit" className="login-button" disabled={loading}>
