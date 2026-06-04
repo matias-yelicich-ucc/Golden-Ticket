@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import '../../styles/App.css';
-import { getEventBySlug } from '../../constants/events';
+import { getEvents } from '../../services/api/client';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -44,18 +44,91 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   });
 
+const slugify = (title, id) => {
+  const clean = (title || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  return `${clean}-${id}`;
+};
+
+const normalizeEvent = (dbEvent) => {
+  const isSoldOut = dbEvent.entradas_disponibles === 0;
+  return {
+    id: dbEvent.id,
+    slug: slugify(dbEvent.titulo, dbEvent.id),
+    title: dbEvent.titulo,
+    subtitle: dbEvent.descripcion || 'Detalles del evento.',
+    description: [dbEvent.descripcion || 'Sin descripción.'],
+    category: dbEvent.categoria || 'Música',
+    date: dbEvent.fecha,
+    fullDate: dbEvent.fecha,
+    timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
+    location: dbEvent.ubicacion,
+    address: dbEvent.ubicacion,
+    capacity: dbEvent.capacidad,
+    entradas_disponibles: dbEvent.entradas_disponibles,
+    soldOut: isSoldOut,
+    badge: isSoldOut ? 'AGOTADO' : '',
+    price: '$5.000',
+    numericPrice: 5000,
+    tickets: [
+      {
+        name: 'Entrada General',
+        description: 'Acceso general al evento.',
+      }
+    ],
+    urlImagen: dbEvent.url_imagen,
+  };
+};
+
 function EventDetail() {
   const { slug } = useParams();
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState('');
-  const event = useMemo(() => getEventBySlug(slug) || null, [slug]);
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const isAuthenticated = Boolean(localStorage.getItem('token'));
+
+  useEffect(() => {
+    getEvents()
+      .then((response) => {
+        const dbEvents = response.data || [];
+        const normalized = dbEvents.map(normalizeEvent);
+        const matched = normalized.find((e) => e.slug === slug);
+        setEvent(matched || null);
+      })
+      .catch((err) => {
+        console.error('Error fetching event detail:', err);
+        setError('No se pudo conectar con el servidor.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [slug]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-  if (!event) {
+  if (loading) {
+    return (
+      <main className="event-detail-page">
+        <header className="event-detail-topbar">
+          <Link className="event-detail-brand" to="/">Golden Ticket</Link>
+          <nav className="event-detail-nav">
+            <Link to="/">Eventos</Link>
+          </nav>
+        </header>
+        <p className="empty-state">Cargando detalles del evento...</p>
+      </main>
+    );
+  }
+
+  if (error || !event) {
     return <Navigate to="/" replace />;
   }
 
@@ -76,7 +149,14 @@ function EventDetail() {
       </header>
 
       <>
-        <section className={`event-detail-hero event-media-${event.image || 'concert'}`}>
+        <section 
+          className="event-detail-hero event-media-concert"
+          style={event.urlImagen ? { 
+            backgroundImage: `url(${event.urlImagen})`, 
+            backgroundSize: 'cover', 
+            backgroundPosition: 'center' 
+          } : {}}
+        >
           <div className="event-detail-hero-overlay" />
           <div className="event-detail-hero-content">
             <span className="event-detail-category">{event.category}</span>

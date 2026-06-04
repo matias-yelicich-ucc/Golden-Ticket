@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
-import { events } from '../../constants/events';
+import { getEvents } from '../../services/api/client';
 
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -67,10 +67,56 @@ const PlusIcon = () => (
   </svg>
 );
 
+const slugify = (title, id) => {
+  const clean = (title || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  return `${clean}-${id}`;
+};
+
+const normalizeEvent = (dbEvent) => {
+  const isSoldOut = dbEvent.entradas_disponibles === 0;
+  return {
+    id: dbEvent.id,
+    slug: slugify(dbEvent.titulo, dbEvent.id),
+    title: dbEvent.titulo,
+    description: [dbEvent.descripcion || 'Sin descripción.'],
+    category: dbEvent.categoria || 'Música',
+    date: dbEvent.fecha,
+    fullDate: dbEvent.fecha,
+    timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
+    location: dbEvent.ubicacion,
+    address: dbEvent.ubicacion,
+    capacity: dbEvent.capacidad,
+    entradas_disponibles: dbEvent.entradas_disponibles,
+    soldOut: isSoldOut,
+    badge: isSoldOut ? 'AGOTADO' : '',
+    price: '$5.000',
+    numericPrice: 5000,
+    tickets: [
+      {
+        name: 'Entrada General',
+        description: 'Acceso general al evento.',
+      }
+    ],
+    urlImagen: dbEvent.url_imagen,
+  };
+};
+
 const EventCard = ({ event }) => (
   <Link className="event-card-link" to={`/eventos/${event.slug}`}>
     <article className="event-card">
-      <div className={`event-media event-media-${event.image || 'concert'}`}>
+      <div 
+        className="event-media event-media-concert"
+        style={event.urlImagen ? { 
+          backgroundImage: `url(${event.urlImagen})`, 
+          backgroundSize: 'cover', 
+          backgroundPosition: 'center' 
+        } : {}}
+      >
         <span className="category-pill">{event.category}</span>
         {(event.badge || event.soldOut) && <span className="status-pill">{event.badge || 'AGOTADO'}</span>}
       </div>
@@ -101,9 +147,27 @@ function HelloWorld() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const isAuthenticated = Boolean(localStorage.getItem('token'));
   const profileMenuRef = useRef(null);
+
+  useEffect(() => {
+    getEvents()
+      .then((response) => {
+        const normalized = (response.data || []).map(normalizeEvent);
+        setEvents(normalized);
+      })
+      .catch((err) => {
+        console.error('Error fetching events:', err);
+        setError('No se pudieron cargar los eventos del servidor.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
 
   const currentUser = useMemo(() => {
     if (!isAuthenticated) return null;
@@ -133,7 +197,7 @@ function HelloWorld() {
   const categories = useMemo(() => {
     const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));
     return ['Todos', ...dynamicCategories];
-  }, []);
+  }, [events]);
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
@@ -141,7 +205,7 @@ function HelloWorld() {
       const matchesSearch = !search || `${event.title} ${event.location}`.toLowerCase().includes(search.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [category, search]);
+  }, [category, search, events]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');

@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../../styles/App.css';
-import { adminEvents, adminMetrics } from '../../constants/admin';
+import { adminMetrics } from '../../constants/admin';
+import { getEvents } from '../../services/api/client';
 
 const iconMap = {
   calendar: (
@@ -57,6 +59,24 @@ const TrashIcon = () => (
 );
 
 function AdminDashboard() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getEvents()
+      .then((response) => {
+        setEvents(response.data || []);
+      })
+      .catch((err) => {
+        console.error('Error fetching events:', err);
+        setError('No se pudieron cargar los eventos del servidor.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <main className="admin-page">
       <header className="event-detail-topbar">
@@ -76,7 +96,7 @@ function AdminDashboard() {
           <div>
             <span className="admin-kicker">Panel de administracion</span>
             <h1>Controla tu calendario de eventos y sus metricas clave.</h1>
-            <p>Vista frontend de referencia para gestionar proximos lanzamientos, capacidad, ventas y accesos directos del equipo administrador.</p>
+            <p>Gestiona los proximos lanzamientos, capacidad y ventas en tiempo real con datos de tu base de datos.</p>
           </div>
           <Link className="admin-primary-link" to="/admin/eventos/nuevo">+ Crear evento</Link>
         </div>
@@ -98,7 +118,7 @@ function AdminDashboard() {
           <div className="admin-table-header">
             <div>
               <h2>Eventos proximos</h2>
-              <p>Lectura visual con datos mock. Las acciones quedan preparadas para integrar despues.</p>
+              <p>Listado en tiempo real desde la base de datos.</p>
             </div>
             <Link to="/admin/eventos/nuevo">Ver todos</Link>
           </div>
@@ -113,37 +133,58 @@ function AdminDashboard() {
               <span>Acciones</span>
             </div>
 
-            {adminEvents.map((event) => (
-              <article className="admin-table-row" key={event.id}>
-                <div className="admin-event-main">
-                  <div className={`admin-event-thumb event-media-${event.image}`} />
-                  <div>
-                    <strong>{event.title}</strong>
-                    <p>{event.venue}</p>
+            {loading && <p className="empty-state">Cargando eventos...</p>}
+            {error && <p className="empty-state" style={{ color: '#ff6b6b' }}>{error}</p>}
+            {!loading && !error && events.length === 0 && (
+              <p className="empty-state">No hay eventos creados. ¡Crea el primero para comenzar!</p>
+            )}
+
+            {!loading && !error && events.map((event) => {
+              const sold = event.capacidad - event.entradas_disponibles;
+              const fill = event.capacidad > 0 ? (sold / event.capacidad) * 100 : 0;
+              const isSoldOut = event.entradas_disponibles === 0;
+              const status = isSoldOut ? 'Agotado' : 'Activo';
+              const statusTone = isSoldOut ? 'danger' : 'success';
+
+              return (
+                <article className="admin-table-row" key={event.id}>
+                  <div className="admin-event-main">
+                    <div 
+                      className="admin-event-thumb" 
+                      style={event.url_imagen ? { 
+                        backgroundImage: `url(${event.url_imagen})`, 
+                        backgroundSize: 'cover', 
+                        backgroundPosition: 'center' 
+                      } : {}}
+                    />
+                    <div>
+                      <strong>{event.titulo}</strong>
+                      <p>{event.ubicacion}</p>
+                    </div>
                   </div>
-                </div>
-                <span className="admin-table-cell">{event.date}</span>
-                <span className="admin-table-cell">{event.capacity}</span>
-                <div className="admin-sales-cell">
-                  <span>{event.sold}</span>
-                  <div className="admin-progress">
-                    <span style={{ width: `${event.fill}%` }} />
+                  <span className="admin-table-cell">{event.fecha} {event.hora_inicio}</span>
+                  <span className="admin-table-cell">{event.capacidad}</span>
+                  <div className="admin-sales-cell">
+                    <span>{sold}</span>
+                    <div className="admin-progress">
+                      <span style={{ width: `${fill}%` }} />
+                    </div>
                   </div>
-                </div>
-                <span className={`admin-status admin-status-${event.statusTone}`}>{event.status}</span>
-                <div className="admin-actions-cell">
-                  <button type="button" aria-label={`Ver metricas de ${event.title}`}>
-                    <BarsIcon />
-                  </button>
-                  <button type="button" aria-label={`Editar ${event.title}`}>
-                    <PencilIcon />
-                  </button>
-                  <button type="button" aria-label={`Eliminar ${event.title}`}>
-                    <TrashIcon />
-                  </button>
-                </div>
-              </article>
-            ))}
+                  <span className={`admin-status admin-status-${statusTone}`}>{status}</span>
+                  <div className="admin-actions-cell">
+                    <button type="button" aria-label={`Ver metricas de ${event.titulo}`}>
+                      <BarsIcon />
+                    </button>
+                    <button type="button" aria-label={`Editar ${event.titulo}`}>
+                      <PencilIcon />
+                    </button>
+                    <button type="button" aria-label={`Eliminar ${event.titulo}`}>
+                      <TrashIcon />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       </section>

@@ -27,6 +27,10 @@ func (m *mockEventDAO) Create(event *domain.Event) error {
 	return nil
 }
 
+func (m *mockEventDAO) GetAll() ([]*domain.Event, error) {
+	return m.events, nil
+}
+
 func TestEventController(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("JWT_SECRET", "test_secret_for_event_controller")

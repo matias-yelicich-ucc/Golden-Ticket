@@ -53,6 +53,7 @@ func main() {
 	// Public Routes
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
+	r.GET("/events", eventController.List)
 
 	// Protected routes (to verify JWT and roles middleware)
 	protected := r.Group("/")
