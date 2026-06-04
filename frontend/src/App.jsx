@@ -21,7 +21,15 @@ function App() {
         <Route path="/eventos/:slug" element={<EventDetail />} />
         <Route path="/mis-entradas" element={<RequireAuth><MyTickets /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
-        <Route path="/admin/eventos/nuevo" element={<RequireAuth><AdminCreateEvent /></RequireAuth>} />
+        <Route path="/admin/dashboard" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
+        <Route
+          path="/admin/eventos/nuevo"
+          element={<RequireAuth><><AdminDashboard /><AdminCreateEvent /></></RequireAuth>}
+        />
+        <Route
+          path="/admin/create-event"
+          element={<RequireAuth><><AdminDashboard /><AdminCreateEvent /></></RequireAuth>}
+        />
         <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />

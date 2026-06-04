@@ -40,21 +40,38 @@ const UsersIcon = () => (
   </svg>
 );
 
-const initialForm = {
+const CrosshairIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 2v3" />
+    <path d="M12 19v3" />
+    <path d="M2 12h3" />
+    <path d="M19 12h3" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M18 6 6 18" />
+    <path d="m6 6 12 12" />
+  </svg>
+);
+
+const createInitialForm = () => ({
   title: '',
   description: '',
-  imageUrl: '',
-  date: '',
-  time: '',
-  duration: '',
-  location: '',
   category: '',
+  eventDate: '',
+  startTime: '',
+  endTime: '',
   capacity: '',
-  price: '',
-};
+  location: '',
+  coordinates: '',
+  imageUrl: '',
+});
 
 function AdminCreateEvent() {
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(createInitialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState('');
   const navigate = useNavigate();
@@ -68,7 +85,15 @@ function AdminCreateEvent() {
   const validate = () => {
     const nextErrors = {};
     if (!form.title.trim()) nextErrors.title = 'El titulo es obligatorio para guardar el evento.';
-    if (!form.date.trim()) nextErrors.date = 'La fecha es obligatoria para publicar el evento.';
+    if (!form.description.trim()) nextErrors.description = 'La descripcion es obligatoria.';
+    if (!form.category.trim()) nextErrors.category = 'La categoria es obligatoria.';
+    if (!form.imageUrl.trim()) nextErrors.imageUrl = 'La imagen destacada es obligatoria.';
+    if (!form.eventDate.trim()) nextErrors.eventDate = 'La fecha es obligatoria para publicar el evento.';
+    if (!form.startTime.trim()) nextErrors.startTime = 'La hora de inicio es obligatoria.';
+    if (!form.endTime.trim()) nextErrors.endTime = 'La hora de fin es obligatoria.';
+    if (!form.location.trim()) nextErrors.location = 'La ubicacion es obligatoria.';
+    if (!form.coordinates.trim()) nextErrors.coordinates = 'Las coordenadas son obligatorias.';
+    if (!form.capacity.trim()) nextErrors.capacity = 'La capacidad es obligatoria.';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -80,31 +105,21 @@ function AdminCreateEvent() {
   };
 
   return (
-    <main className="admin-page">
-      <header className="event-detail-topbar">
-        <Link className="event-detail-brand" to="/">Golden Ticket</Link>
-        <nav className="event-detail-nav">
-          <Link to="/">Eventos</Link>
-          <Link to="/admin">Panel admin</Link>
-          <Link to="/admin/eventos/nuevo" className="is-active">Nuevo evento</Link>
-        </nav>
-        <div className="event-detail-actions">
-          <Link className="event-detail-login" to="/admin">Volver al panel</Link>
-        </div>
-      </header>
+    <div className="admin-dialog-page">
+      <div className="admin-dialog-shell">
+        <Link className="admin-dialog-backdrop" to="/admin/dashboard" aria-label="Cerrar dialogo" />
 
-      <section className="admin-shell admin-form-shell">
-        <div className="admin-heading admin-heading-compact">
-          <div>
-            <span className="admin-kicker">Crear nuevo evento</span>
-            <h1>Configura una experiencia lista para publicar en la plataforma.</h1>
-            <p>Esta vista es solo frontend y replica el flujo visual de alta de eventos con validaciones basicas y placeholders realistas.</p>
-          </div>
-        </div>
+        <form className="admin-form-card admin-dialog-card" onSubmit={handleSubmit}>
+          <div className="admin-dialog-header">
+            <div>
+              <span className="admin-kicker">Crear nuevo evento</span>
+              <h1>Completa la ficha del evento</h1>
+              <p>Dialogo frontend para modelar la entidad de eventos y dejar lista la integracion futura del backend.</p>
+            </div>
 
-        <form className="admin-form-card" onSubmit={handleSubmit}>
-          <div className="admin-form-hero">
-            <div className="admin-form-hero-overlay" />
+            <button type="button" className="admin-dialog-close" onClick={() => navigate('/admin/dashboard')} aria-label="Cerrar dialogo">
+              <CloseIcon />
+            </button>
           </div>
 
           <div className="admin-form-grid">
@@ -124,10 +139,28 @@ function AdminCreateEvent() {
               <label htmlFor="event-description">Descripcion</label>
               <textarea
                 id="event-description"
+                className={errors.description ? 'has-error' : ''}
                 placeholder="Escribe los detalles principales del evento aqui..."
                 value={form.description}
                 onChange={(event) => handleChange('description', event.target.value)}
               />
+              {errors.description && <span className="admin-field-error">{errors.description}</span>}
+            </div>
+
+            <div className="admin-field admin-field-full">
+              <label htmlFor="event-category">Categoria</label>
+              <select
+                id="event-category"
+                className={errors.category ? 'has-error' : ''}
+                value={form.category}
+                onChange={(event) => handleChange('category', event.target.value)}
+              >
+                <option value="">Selecciona una...</option>
+                {adminCategories.map((category) => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
+              {errors.category && <span className="admin-field-error">{errors.category}</span>}
             </div>
 
             <div className="admin-field admin-field-full">
@@ -136,26 +169,28 @@ function AdminCreateEvent() {
                 <span><ImageIcon /></span>
                 <input
                   id="event-image"
+                  className={errors.imageUrl ? 'has-error' : ''}
                   placeholder="https://ejemplo.com/imagen.jpg"
                   value={form.imageUrl}
                   onChange={(event) => handleChange('imageUrl', event.target.value)}
                 />
               </div>
+              {errors.imageUrl && <span className="admin-field-error">{errors.imageUrl}</span>}
             </div>
 
             <div className="admin-field">
-              <label htmlFor="event-date">Fecha *</label>
+              <label htmlFor="event-date">Fecha del evento *</label>
               <div className="admin-input-icon">
                 <span><CalendarIcon /></span>
                 <input
                   id="event-date"
                   type="date"
-                  className={errors.date ? 'has-error' : ''}
-                  value={form.date}
-                  onChange={(event) => handleChange('date', event.target.value)}
+                  className={errors.eventDate ? 'has-error' : ''}
+                  value={form.eventDate}
+                  onChange={(event) => handleChange('eventDate', event.target.value)}
                 />
               </div>
-              {errors.date && <span className="admin-field-error">{errors.date}</span>}
+              <span className="admin-field-error">{errors.eventDate || ' '}</span>
             </div>
 
             <div className="admin-field">
@@ -165,92 +200,87 @@ function AdminCreateEvent() {
                 <input
                   id="event-time"
                   type="time"
-                  value={form.time}
-                  onChange={(event) => handleChange('time', event.target.value)}
+                  className={errors.startTime ? 'has-error' : ''}
+                  value={form.startTime}
+                  onChange={(event) => handleChange('startTime', event.target.value)}
                 />
               </div>
+              <span className="admin-field-error">{errors.startTime || ' '}</span>
             </div>
 
             <div className="admin-field">
-              <label htmlFor="event-duration">Duracion (hs)</label>
-              <input
-                id="event-duration"
-                type="number"
-                min="0"
-                placeholder="Ej. 2"
-                value={form.duration}
-                onChange={(event) => handleChange('duration', event.target.value)}
-              />
+              <label htmlFor="event-end-time">Hora de fin</label>
+              <div className="admin-input-icon">
+                <span><ClockIcon /></span>
+                <input
+                  id="event-end-time"
+                  type="time"
+                  className={errors.endTime ? 'has-error' : ''}
+                  value={form.endTime}
+                  onChange={(event) => handleChange('endTime', event.target.value)}
+                />
+              </div>
+              <span className="admin-field-error">{errors.endTime || ' '}</span>
             </div>
 
             <div className="admin-field admin-field-full">
-              <label htmlFor="event-location">Ubicacion / lugar</label>
+              <label htmlFor="event-location">Ubicacion</label>
               <div className="admin-input-icon">
                 <span><PinIcon /></span>
                 <input
                   id="event-location"
+                  className={errors.location ? 'has-error' : ''}
                   placeholder="Nombre del recinto o direccion completa"
                   value={form.location}
                   onChange={(event) => handleChange('location', event.target.value)}
                 />
               </div>
+              {errors.location && <span className="admin-field-error">{errors.location}</span>}
             </div>
 
             <div className="admin-field">
-              <label htmlFor="event-category">Categoria</label>
-              <select
-                id="event-category"
-                value={form.category}
-                onChange={(event) => handleChange('category', event.target.value)}
-              >
-                <option value="">Selecciona una...</option>
-                {adminCategories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              <label htmlFor="event-coordinates">Coordenadas</label>
+              <div className="admin-input-icon">
+                <span><CrosshairIcon /></span>
+                <input
+                  id="event-coordinates"
+                  className={errors.coordinates ? 'has-error' : ''}
+                  placeholder="-31.4201, -64.1888"
+                  value={form.coordinates}
+                  onChange={(event) => handleChange('coordinates', event.target.value)}
+                />
+              </div>
+              {errors.coordinates && <span className="admin-field-error">{errors.coordinates}</span>}
             </div>
 
             <div className="admin-field">
-              <label htmlFor="event-capacity">Cupo maximo</label>
+              <label htmlFor="event-capacity">Capacidad</label>
               <div className="admin-input-icon">
                 <span><UsersIcon /></span>
                 <input
                   id="event-capacity"
                   type="number"
                   min="0"
-                  placeholder="Ilimitado si se deja vacio"
+                  className={errors.capacity ? 'has-error' : ''}
+                  placeholder="Ej. 5000"
                   value={form.capacity}
                   onChange={(event) => handleChange('capacity', event.target.value)}
                 />
               </div>
+              {errors.capacity && <span className="admin-field-error">{errors.capacity}</span>}
             </div>
 
-            <div className="admin-field">
-              <label htmlFor="event-price">Precio ticket base</label>
-              <div className="admin-input-prefix">
-                <span>$</span>
-                <input
-                  id="event-price"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={form.price}
-                  onChange={(event) => handleChange('price', event.target.value)}
-                />
-              </div>
-            </div>
           </div>
 
           <div className="admin-form-footer">
-            <button type="button" className="admin-ghost-button" onClick={() => navigate('/admin')}>Cancelar</button>
+            <button type="button" className="admin-ghost-button" onClick={() => navigate('/admin/dashboard')}>Cancelar</button>
             <button type="submit" className="admin-submit-button">Guardar evento</button>
           </div>
 
           {feedback && <p className="purchase-note success-state admin-inline-feedback">{feedback}</p>}
         </form>
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
 

@@ -60,6 +60,13 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const PlusIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </svg>
+);
+
 const EventCard = ({ event }) => (
   <Link className="event-card-link" to={`/eventos/${event.slug}`}>
     <article className="event-card">
@@ -192,15 +199,21 @@ function HelloWorld() {
               {menuOpen && (
                 <div className="topbar-profile-menu" role="menu">
                   {isAdmin && (
-                    <button type="button" onClick={() => { setMenuOpen(false); navigate('/admin'); }}>
+                    <Link to="/admin/dashboard" onClick={() => setMenuOpen(false)}>
                       <DashboardIcon />
                       Ir al panel admin
-                    </button>
+                    </Link>
                   )}
-                  <button type="button" onClick={() => { setMenuOpen(false); navigate('/mis-entradas'); }}>
+                  {isAdmin && (
+                    <Link to="/admin/create-event" onClick={() => setMenuOpen(false)}>
+                      <PlusIcon />
+                      Crear evento
+                    </Link>
+                  )}
+                  <Link to="/mis-entradas" onClick={() => setMenuOpen(false)}>
                     <TicketIcon />
                     Ver mis entradas
-                  </button>
+                  </Link>
                   <button type="button" onClick={handleLogout}>
                     <LogoutIcon />
                     Cerrar sesion
