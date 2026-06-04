@@ -1,4 +1,4 @@
-package clients
+package dao
 
 import (
 	"fmt"
@@ -6,14 +6,17 @@ import (
 	"os"
 	"time"
 
+	"golden-ticket/backend/domain"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
 
+// DB es la instancia global de conexión a la base de datos
 var DB *gorm.DB
 
-// InitDB initializes the connection to MySQL using GORM
+// InitDB inicializa la conexión con MySQL utilizando GORM y realiza la automigración
 func InitDB() {
 	host := os.Getenv("DB_HOST")
 	port := os.Getenv("DB_PORT")
@@ -21,7 +24,7 @@ func InitDB() {
 	pass := os.Getenv("DB_PASSWORD")
 	name := os.Getenv("DB_NAME")
 
-	// Default fallback values for local development
+	// Valores por defecto para desarrollo local
 	if host == "" {
 		host = "localhost"
 	}
@@ -44,17 +47,24 @@ func InitDB() {
 	})
 
 	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
+		log.Fatalf("Error al conectar con la base de datos: %v", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("Error getting standard sqlDB from GORM: %v", err)
+		log.Fatalf("Error al obtener sqlDB estándar desde GORM: %v", err)
 	}
 
+	// Configuración del connection pool
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	log.Println("Database connection successfully initialized!")
+	log.Println("¡Conexión a la base de datos inicializada en la capa DAO!")
+
+	// Automigración de esquemas
+	if err := DB.AutoMigrate(&domain.User{}, &domain.Event{}, &domain.Ticket{}); err != nil {
+		log.Fatalf("Error durante la automigración: %v", err)
+	}
+	log.Println("¡Esquemas de la base de datos automigrados con éxito!")
 }
