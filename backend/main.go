@@ -28,6 +28,10 @@ func main() {
 	authService := services.NewAuthService(userDAO)
 	authController := controllers.NewAuthController(authService)
 
+	eventDAO := dao.NewEventDAO()
+	eventService := services.NewEventService(eventDAO)
+	eventController := controllers.NewEventController(eventService)
+
 	// Setup Router
 	r := gin.Default()
 
@@ -73,6 +77,7 @@ func main() {
 					"message": "Welcome to the Admin Dashboard",
 				})
 			})
+			adminOnly.POST("/events", eventController.Create)
 		}
 	}
 
