@@ -85,6 +85,15 @@ func (s *eventServiceImpl) GetAllEvents() ([]*domain.EventResponseDTO, error) {
 
 	response := make([]*domain.EventResponseDTO, 0)
 	for _, event := range events {
+		// Calcular entradas vendidas dinámicamente
+		entradasVendidas := 0
+		for _, ticket := range event.Tickets {
+			if ticket.Estado == "activo" {
+				entradasVendidas++
+			}
+		}
+		entradasDisponibles := event.Capacidad - entradasVendidas
+
 		response = append(response, &domain.EventResponseDTO{
 			ID:                  event.ID,
 			Titulo:              event.Titulo,
@@ -97,7 +106,8 @@ func (s *eventServiceImpl) GetAllEvents() ([]*domain.EventResponseDTO, error) {
 			Coordenadas:         event.Coordenadas,
 			UrlImagen:           event.UrlImagen,
 			Capacidad:           event.Capacidad,
-			EntradasDisponibles: event.EntradasDisponibles,
+			EntradasDisponibles: entradasDisponibles,
+			Precio:              event.Precio,
 		})
 	}
 

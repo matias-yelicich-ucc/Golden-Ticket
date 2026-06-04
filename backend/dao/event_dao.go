@@ -29,9 +29,4 @@ func (d *eventDAOImpl) Create(event *domain.Event) error {
 	return DB.Create(event).Error
 }
 
-// GetAll obtiene todos los eventos de la base de datos
-func (d *eventDAOImpl) GetAll() ([]*domain.Event, error) {
-	var events []*domain.Event
-	err := DB.Find(&events).Error
-	return events, err
-}
+
