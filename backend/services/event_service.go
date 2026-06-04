@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golden-ticket/backend/dao"
@@ -27,7 +28,13 @@ func NewEventService(eventDAO dao.EventDAO) EventService {
 // CreateEvent registra un nuevo evento en el catálogo realizando las validaciones pertinentes
 func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.EventResponseDTO, error) {
 	// Validación: La fecha y hora del evento debe ser en el futuro
-	if dto.FechaHora.Before(time.Now()) {
+	eventDateTimeStr := fmt.Sprintf("%sT%s:00", dto.Fecha, dto.HoraInicio)
+	eventTime, err := time.ParseInLocation("2006-01-02T15:04:05", eventDateTimeStr, time.Local)
+	if err != nil {
+		return nil, errors.New("formato de fecha u hora de inicio inválido")
+	}
+
+	if eventTime.Before(time.Now()) {
 		return nil, errors.New("la fecha del evento debe ser en el futuro")
 	}
 
@@ -35,8 +42,12 @@ func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.Event
 		Titulo:              dto.Titulo,
 		Descripcion:         dto.Descripcion,
 		Categoria:           dto.Categoria,
-		FechaHora:           dto.FechaHora,
-		Duracion:            dto.Duracion,
+		Fecha:               dto.Fecha,
+		HoraInicio:          dto.HoraInicio,
+		HoraFin:             dto.HoraFin,
+		Ubicacion:           dto.Ubicacion,
+		Coordenadas:         dto.Coordenadas,
+		UrlImagen:           dto.UrlImagen,
 		Capacidad:           dto.Capacidad,
 		EntradasDisponibles: dto.Capacidad, // El cupo inicial es igual a la capacidad total
 	}
@@ -50,8 +61,12 @@ func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.Event
 		Titulo:              event.Titulo,
 		Descripcion:         event.Descripcion,
 		Categoria:           event.Categoria,
-		FechaHora:           event.FechaHora,
-		Duracion:            event.Duracion,
+		Fecha:               event.Fecha,
+		HoraInicio:          event.HoraInicio,
+		HoraFin:             event.HoraFin,
+		Ubicacion:           event.Ubicacion,
+		Coordenadas:         event.Coordenadas,
+		UrlImagen:           event.UrlImagen,
 		Capacidad:           event.Capacidad,
 		EntradasDisponibles: event.EntradasDisponibles,
 	}
