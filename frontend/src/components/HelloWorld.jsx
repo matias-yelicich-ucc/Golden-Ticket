@@ -128,7 +128,7 @@ function HelloWorld() {
       .join('');
   }, [currentUser]);
 
-  const isAdmin = currentUser?.rol === 'admin';
+  const isAdmin = ['admin', 'administrador'].includes(currentUser?.rol);
 
   const categories = useMemo(() => {
     const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));

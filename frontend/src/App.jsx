@@ -17,7 +17,7 @@ const getStoredUser = () => {
 
 const hasToken = () => Boolean(localStorage.getItem('token'));
 const getUserRole = () => getStoredUser()?.rol;
-const isAdmin = () => getUserRole() === 'admin';
+const isAdmin = () => ['admin', 'administrador'].includes(getUserRole());
 
 const RequireAuth = ({ children }) => (hasToken() ? children : <Navigate to="/login" replace />);
 
