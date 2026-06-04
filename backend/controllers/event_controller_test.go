@@ -47,7 +47,7 @@ func TestEventController(t *testing.T) {
 	protected.Use(middleware.AuthMiddleware())
 	{
 		adminOnly := protected.Group("/admin")
-		adminOnly.Use(middleware.AuthorizeRole("administrador"))
+		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
 			adminOnly.POST("/events", ctrl.Create)
 		}
@@ -78,6 +78,7 @@ func TestEventController(t *testing.T) {
 		Coordenadas: "-31.4201, -64.1888",
 		UrlImagen:   "https://example.com/imagen.jpg",
 		Capacidad:   500,
+		Precio:      1500.00,
 	}
 	body, _ := json.Marshal(validEvent)
 
@@ -104,6 +105,9 @@ func TestEventController(t *testing.T) {
 	if respEvent.Ubicacion != "Estadio Mario Alberto Kempes" {
 		t.Errorf("Expected Ubicacion 'Estadio Mario Alberto Kempes', got '%s'", respEvent.Ubicacion)
 	}
+	if respEvent.Precio != 1500.00 {
+		t.Errorf("Expected Precio 1500.00, got %f", respEvent.Precio)
+	}
 
 	// 2. Error: Required fields missing (empty title)
 	invalidEventMissingFields := domain.EventCreateDTO{
@@ -113,6 +117,7 @@ func TestEventController(t *testing.T) {
 		HoraFin:    "23:30",
 		Ubicacion:  "Estadio Mario Alberto Kempes",
 		Capacidad:  500,
+		Precio:     1500.00,
 	}
 	body2, _ := json.Marshal(invalidEventMissingFields)
 	req2, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body2))
@@ -135,6 +140,7 @@ func TestEventController(t *testing.T) {
 		HoraFin:    "14:00",
 		Ubicacion:  "Estadio Mario Alberto Kempes",
 		Capacidad:  100,
+		Precio:     1500.00,
 	}
 	body3, _ := json.Marshal(invalidEventPastDate)
 	req3, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body3))

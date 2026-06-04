@@ -66,6 +66,7 @@ const createInitialForm = () => ({
   startTime: '',
   endTime: '',
   capacity: '',
+  price: '',
   location: '',
   coordinates: '',
   imageUrl: '',
@@ -95,6 +96,8 @@ function AdminCreateEvent() {
     if (!form.location.trim()) nextErrors.location = 'La ubicacion es obligatoria.';
     if (!form.coordinates.trim()) nextErrors.coordinates = 'Las coordenadas son obligatorias.';
     if (!form.capacity.trim()) nextErrors.capacity = 'La capacidad es obligatoria.';
+    if (!form.price.trim()) nextErrors.price = 'El precio es obligatorio.';
+    else if (isNaN(form.price) || parseFloat(form.price) < 0) nextErrors.price = 'El precio debe ser un número mayor o igual a 0.';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -115,6 +118,7 @@ function AdminCreateEvent() {
         coordenadas: form.coordinates,
         url_imagen: form.imageUrl,
         capacidad: parseInt(form.capacity, 10),
+        precio: parseFloat(form.price),
       };
 
       await createEvent(payload);
@@ -293,6 +297,24 @@ function AdminCreateEvent() {
                 />
               </div>
               {errors.capacity && <span className="admin-field-error">{errors.capacity}</span>}
+            </div>
+
+            <div className="admin-field">
+              <label htmlFor="event-price">Precio *</label>
+              <div className="admin-input-icon">
+                <span style={{ fontSize: '1.2rem', padding: '0 4px', color: 'var(--text-muted)' }}>$</span>
+                <input
+                  id="event-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={errors.price ? 'has-error' : ''}
+                  placeholder="Ej. 1500.00"
+                  value={form.price}
+                  onChange={(event) => handleChange('price', event.target.value)}
+                />
+              </div>
+              {errors.price && <span className="admin-field-error">{errors.price}</span>}
             </div>
 
           </div>
