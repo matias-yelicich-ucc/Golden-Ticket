@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import '../styles/App.css';
-import { adminEvents, adminMetrics } from '../constants/admin';
+import '../../styles/App.css';
+import { adminEvents, adminMetrics } from '../../constants/admin';
 
 const iconMap = {
   calendar: (

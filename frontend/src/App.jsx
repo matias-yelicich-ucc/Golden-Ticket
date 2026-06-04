@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import HelloWorld from './components/HelloWorld';
-import EventDetail from './pages/EventDetail';
-import Register from './pages/Register';
-import MyTickets from './pages/MyTickets';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminCreateEvent from './pages/AdminCreateEvent';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import HomePage from './pages/home/HomePage';
+import AdminCreateEvent from './pages/admin/AdminCreateEvent';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import EventDetail from './pages/events/EventDetail';
+import MyTickets from './pages/tickets/MyTickets';
 
 const hasToken = () => Boolean(localStorage.getItem('token'));
 
@@ -17,7 +17,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HelloWorld />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/eventos/:slug" element={<EventDetail />} />
         <Route path="/mis-entradas" element={<RequireAuth><MyTickets /></RequireAuth>} />
         <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
