@@ -39,17 +39,17 @@ func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.Event
 	}
 
 	event := domain.Event{
-		Titulo:              dto.Titulo,
-		Descripcion:         dto.Descripcion,
-		Categoria:           dto.Categoria,
-		Fecha:               dto.Fecha,
-		HoraInicio:          dto.HoraInicio,
-		HoraFin:             dto.HoraFin,
-		Ubicacion:           dto.Ubicacion,
-		Coordenadas:         dto.Coordenadas,
-		UrlImagen:           dto.UrlImagen,
-		Capacidad:           dto.Capacidad,
-		EntradasDisponibles: dto.Capacidad, // El cupo inicial es igual a la capacidad total
+		Titulo:      dto.Titulo,
+		Descripcion: dto.Descripcion,
+		Categoria:   dto.Categoria,
+		Fecha:       dto.Fecha,
+		HoraInicio:  dto.HoraInicio,
+		HoraFin:     dto.HoraFin,
+		Ubicacion:   dto.Ubicacion,
+		Coordenadas: dto.Coordenadas,
+		UrlImagen:   dto.UrlImagen,
+		Capacidad:   dto.Capacidad,
+		Precio:      dto.Precio,
 	}
 
 	if err := s.eventDAO.Create(&event); err != nil {
@@ -68,7 +68,8 @@ func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.Event
 		Coordenadas:         event.Coordenadas,
 		UrlImagen:           event.UrlImagen,
 		Capacidad:           event.Capacidad,
-		EntradasDisponibles: event.EntradasDisponibles,
+		EntradasDisponibles: event.Capacidad, // Al crearse, no hay entradas vendidas aún
+		Precio:              event.Precio,
 	}
 
 	return &response, nil
