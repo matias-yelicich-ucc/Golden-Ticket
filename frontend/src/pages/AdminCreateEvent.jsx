@@ -104,20 +104,16 @@ function AdminCreateEvent() {
     if (!validate()) return;
 
     try {
-      // Combinamos eventDate y startTime en un string ISO para fecha_hora
-      const fechaHora = new Date(`${form.eventDate}T${form.startTime}:00`).toISOString();
-
-      // Calculamos la duración en minutos entre startTime y endTime
-      const start = new Date(`1970-01-01T${form.startTime}:00`);
-      const end = new Date(`1970-01-01T${form.endTime}:00`);
-      const duracion = Math.round((end - start) / 60000); // diferencia en minutos
-
       const payload = {
         titulo: form.title,
         descripcion: form.description,
         categoria: form.category,
-        fecha_hora: fechaHora,
-        duracion: duracion > 0 ? duracion : 120, // fallback por si da negativo
+        fecha: form.eventDate,
+        hora_inicio: form.startTime,
+        hora_fin: form.endTime,
+        ubicacion: form.location,
+        coordenadas: form.coordinates,
+        url_imagen: form.imageUrl,
         capacidad: parseInt(form.capacity, 10),
       };
 

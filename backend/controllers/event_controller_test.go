@@ -62,13 +62,17 @@ func TestEventController(t *testing.T) {
 	}
 
 	// 1. Success: Admin creates valid event
-	futureTime := time.Now().Add(24 * time.Hour)
+	futureDate := time.Now().Add(24 * time.Hour).Format("2006-01-02")
 	validEvent := domain.EventCreateDTO{
 		Titulo:      "Concierto de Rock",
 		Descripcion: "Un show espectacular",
 		Categoria:   "Música",
-		FechaHora:   futureTime,
-		Duracion:    120,
+		Fecha:       futureDate,
+		HoraInicio:  "21:00",
+		HoraFin:     "23:30",
+		Ubicacion:   "Estadio Mario Alberto Kempes",
+		Coordenadas: "-31.4201, -64.1888",
+		UrlImagen:   "https://example.com/imagen.jpg",
 		Capacidad:   500,
 	}
 	body, _ := json.Marshal(validEvent)
@@ -93,13 +97,18 @@ func TestEventController(t *testing.T) {
 	if respEvent.EntradasDisponibles != 500 {
 		t.Errorf("Expected EntradasDisponibles 500, got %d", respEvent.EntradasDisponibles)
 	}
+	if respEvent.Ubicacion != "Estadio Mario Alberto Kempes" {
+		t.Errorf("Expected Ubicacion 'Estadio Mario Alberto Kempes', got '%s'", respEvent.Ubicacion)
+	}
 
 	// 2. Error: Required fields missing (empty title)
 	invalidEventMissingFields := domain.EventCreateDTO{
-		Titulo:    "",
-		FechaHora: futureTime,
-		Duracion:  120,
-		Capacidad: 500,
+		Titulo:     "",
+		Fecha:      futureDate,
+		HoraInicio: "21:00",
+		HoraFin:    "23:30",
+		Ubicacion:  "Estadio Mario Alberto Kempes",
+		Capacidad:  500,
 	}
 	body2, _ := json.Marshal(invalidEventMissingFields)
 	req2, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body2))
@@ -114,12 +123,14 @@ func TestEventController(t *testing.T) {
 	}
 
 	// 3. Error: Past date
-	pastTime := time.Now().Add(-24 * time.Hour)
+	pastDate := time.Now().Add(-24 * time.Hour).Format("2006-01-02")
 	invalidEventPastDate := domain.EventCreateDTO{
-		Titulo:    "Evento del Pasado",
-		FechaHora: pastTime,
-		Duracion:  60,
-		Capacidad: 100,
+		Titulo:     "Evento del Pasado",
+		Fecha:      pastDate,
+		HoraInicio: "12:00",
+		HoraFin:    "14:00",
+		Ubicacion:  "Estadio Mario Alberto Kempes",
+		Capacidad:  100,
 	}
 	body3, _ := json.Marshal(invalidEventPastDate)
 	req3, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body3))
