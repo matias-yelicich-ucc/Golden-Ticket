@@ -15,12 +15,12 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<RequireAuth><HelloWorld /></RequireAuth>} />
-        <Route path="/eventos/:slug" element={<RequireAuth><EventDetail /></RequireAuth>} />
+        <Route path="/" element={<HelloWorld />} />
+        <Route path="/eventos/:slug" element={<EventDetail />} />
         <Route path="/mis-entradas" element={<RequireAuth><MyTickets /></RequireAuth>} />
         <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

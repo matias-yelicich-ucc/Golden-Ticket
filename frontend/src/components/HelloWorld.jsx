@@ -63,6 +63,7 @@ function HelloWorld() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Todos');
   const navigate = useNavigate();
+  const isAuthenticated = Boolean(localStorage.getItem('token'));
 
   const categories = useMemo(() => {
     const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));
@@ -89,10 +90,14 @@ function HelloWorld() {
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
         <nav className="event-detail-nav">
           <Link to="/">Eventos</Link>
-          <Link to="/mis-entradas">Mis entradas</Link>
+          {isAuthenticated ? <Link to="/mis-entradas">Mis entradas</Link> : <Link to="/login">Iniciar sesion</Link>}
         </nav>
         <div className="event-detail-actions">
-          <button type="button" onClick={handleLogout}>Cerrar sesion</button>
+          {isAuthenticated ? (
+            <button type="button" onClick={handleLogout}>Cerrar sesion</button>
+          ) : (
+            <button type="button" onClick={() => navigate('/register')}>Crear cuenta</button>
+          )}
         </div>
       </header>
 

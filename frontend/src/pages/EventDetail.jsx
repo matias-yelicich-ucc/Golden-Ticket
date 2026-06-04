@@ -49,6 +49,7 @@ function EventDetail() {
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState('');
   const event = useMemo(() => getEventBySlug(slug) || null, [slug]);
+  const isAuthenticated = Boolean(localStorage.getItem('token'));
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -70,7 +71,7 @@ function EventDetail() {
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
         <nav className="event-detail-nav">
           <Link to="/">Eventos</Link>
-          <Link to="/mis-entradas">Mis entradas</Link>
+          {isAuthenticated ? <Link to="/mis-entradas">Mis entradas</Link> : <Link to="/login">Iniciar sesion</Link>}
         </nav>
       </header>
 
