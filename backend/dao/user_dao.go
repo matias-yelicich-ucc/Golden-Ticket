@@ -1,7 +1,6 @@
 package dao
 
 import (
-	"golden-ticket/backend/clients"
 	"golden-ticket/backend/domain"
 )
 
@@ -20,13 +19,13 @@ func NewUserDAO() UserDAO {
 
 // Create inserts a new user in the database
 func (d *userDAOImpl) Create(user *domain.User) error {
-	return clients.DB.Create(user).Error
+	return DB.Create(user).Error
 }
 
 // GetByEmail retrieves a user by their email
 func (d *userDAOImpl) GetByEmail(email string) (*domain.User, error) {
 	var user domain.User
-	err := clients.DB.Where("email = ?", email).First(&user).Error
+	err := DB.Where("email = ?", email).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

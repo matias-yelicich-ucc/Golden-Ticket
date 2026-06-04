@@ -10,6 +10,7 @@ type User struct {
 	Email     string    `gorm:"type:varchar(191);uniqueIndex;not null" json:"email"` // 191 is MySQL safe index size
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
 	Rol       string    `gorm:"type:varchar(50);not null;default:'cliente'" json:"rol"`
+	Tickets   []Ticket  `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"tickets,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
