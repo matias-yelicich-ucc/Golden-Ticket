@@ -70,7 +70,7 @@ func main() {
 
 		// Admin-only test route
 		adminOnly := protected.Group("/admin")
-		adminOnly.Use(middleware.AuthorizeRole("administrador"))
+		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
 			adminOnly.GET("/dashboard", func(c *gin.Context) {
 				c.JSON(http.StatusOK, gin.H{
