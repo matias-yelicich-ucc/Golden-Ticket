@@ -26,8 +26,8 @@ function Register() {
     setLoading(true);
     try {
       await registerUser(form);
-      setSuccess('Cuenta creada con exito. Ahora podes iniciar sesion.');
-      setTimeout(() => navigate('/login'), 1200);
+      setSuccess('Cuenta creada con exito. Te llevamos a la home.');
+      setTimeout(() => navigate('/'), 1200);
     } catch (requestError) {
       setError(requestError.response?.data?.error || 'No se pudo registrar el usuario');
     } finally {
