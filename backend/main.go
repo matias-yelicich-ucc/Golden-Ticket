@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"golden-ticket/backend/clients"
 	"golden-ticket/backend/controllers"
 	"golden-ticket/backend/dao"
-	"golden-ticket/backend/domain"
 	"golden-ticket/backend/middleware"
 	"golden-ticket/backend/services"
 
@@ -23,18 +21,16 @@ func main() {
 	}
 
 	// Initialize Database
-	clients.InitDB()
-
-	// AutoMigrate the User schema
-	if err := clients.DB.AutoMigrate(&domain.User{}); err != nil {
-		log.Fatalf("Error during AutoMigrate: %v", err)
-	}
-	log.Println("Database schemas auto-migrated successfully!")
+	dao.InitDB()
 
 	// Setup layers
 	userDAO := dao.NewUserDAO()
 	authService := services.NewAuthService(userDAO)
 	authController := controllers.NewAuthController(authService)
+
+	eventDAO := dao.NewEventDAO()
+	eventService := services.NewEventService(eventDAO)
+	eventController := controllers.NewEventController(eventService)
 
 	// Setup Router
 	r := gin.Default()
@@ -81,6 +77,7 @@ func main() {
 					"message": "Welcome to the Admin Dashboard",
 				})
 			})
+			adminOnly.POST("/events", eventController.Create)
 		}
 	}
 

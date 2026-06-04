@@ -16,3 +16,4 @@ api.interceptors.request.use((config) => {
 
 export const loginUser = (payload) => api.post('/login', payload);
 export const registerUser = (payload) => api.post('/register', payload);
+export const createEvent = (payload) => api.post('/admin/events', payload);
