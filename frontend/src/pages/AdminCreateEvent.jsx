@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/App.css';
 import { adminCategories } from '../constants/admin';
+import { createEvent } from '../services/api/client';
 
 const ImageIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -98,10 +99,38 @@ function AdminCreateEvent() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate()) return;
-    setFeedback('Frontend listo: este formulario quedo preparado para conectar luego con el backend de eventos.');
+
+    try {
+      // Combinamos eventDate y startTime en un string ISO para fecha_hora
+      const fechaHora = new Date(`${form.eventDate}T${form.startTime}:00`).toISOString();
+
+      // Calculamos la duración en minutos entre startTime y endTime
+      const start = new Date(`1970-01-01T${form.startTime}:00`);
+      const end = new Date(`1970-01-01T${form.endTime}:00`);
+      const duracion = Math.round((end - start) / 60000); // diferencia en minutos
+
+      const payload = {
+        titulo: form.title,
+        descripcion: form.description,
+        categoria: form.category,
+        fecha_hora: fechaHora,
+        duracion: duracion > 0 ? duracion : 120, // fallback por si da negativo
+        capacidad: parseInt(form.capacity, 10),
+      };
+
+      await createEvent(payload);
+      setFeedback('¡Evento creado con éxito en el servidor!');
+      
+      setTimeout(() => {
+        navigate('/admin');
+      }, 1500);
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Error al conectar con el servidor';
+      setFeedback(`Error: ${errorMsg}`);
+    }
   };
 
   return (

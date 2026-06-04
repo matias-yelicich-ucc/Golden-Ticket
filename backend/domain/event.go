@@ -16,3 +16,25 @@ type Event struct {
 	CreatedAt           time.Time `json:"created_at"`
 	UpdatedAt           time.Time `json:"updated_at"`
 }
+
+// EventCreateDTO se utiliza para la solicitud de creación de un nuevo evento
+type EventCreateDTO struct {
+	Titulo      string    `json:"titulo" binding:"required"`
+	Descripcion string    `json:"descripcion"`
+	Categoria   string    `json:"categoria"`
+	FechaHora   time.Time `json:"fecha_hora" binding:"required"`
+	Duracion    int       `json:"duracion" binding:"required,gt=0"` // en minutos
+	Capacidad   int       `json:"capacidad" binding:"required,gt=0"`
+}
+
+// EventResponseDTO representa la respuesta segura tras crear o consultar un evento
+type EventResponseDTO struct {
+	ID                  uint      `json:"id"`
+	Titulo              string    `json:"titulo"`
+	Descripcion         string    `json:"descripcion"`
+	Categoria           string    `json:"categoria"`
+	FechaHora           time.Time `json:"fecha_hora"`
+	Duracion            int       `json:"duracion"`
+	Capacidad           int       `json:"capacidad"`
+	EntradasDisponibles int       `json:"entradas_disponibles"`
+}
