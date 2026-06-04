@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '../styles/App.css';
-import { adminCategories } from '../constants/admin';
-import { createEvent } from '../services/api/client';
+import '../../styles/App.css';
+import { adminCategories } from '../../constants/admin';
+import { createEvent } from '../../services/api/client';
 
 const ImageIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

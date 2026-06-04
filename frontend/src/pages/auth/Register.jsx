@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Login.css';
-import { registerUser } from '../services/api/client';
+import '../../styles/Login.css';
+import { registerUser } from '../../services/api/client';
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

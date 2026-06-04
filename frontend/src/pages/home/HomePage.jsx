@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import '../styles/App.css';
-import { events } from '../constants/events';
+import '../../styles/App.css';
+import { events } from '../../constants/events';
 
 const SearchIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">

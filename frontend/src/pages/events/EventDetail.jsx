@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import '../styles/App.css';
-import { getEventBySlug } from '../constants/events';
+import '../../styles/App.css';
+import { getEventBySlug } from '../../constants/events';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
