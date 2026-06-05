@@ -256,11 +256,11 @@ function AdminDashboard() {
                 <path d="M14 11v6" />
               </svg>
             </div>
-            <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancel event</h3>
+            <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancelar evento</h3>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              You are about to cancel <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
-              All active tickets will be cancelled and the money will be refunded to ticket holders.
-              This action cannot be undone.
+              Estás por cancelar <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
+              Todas las entradas activas serán canceladas y el dinero será reintegrado a los compradores.
+              Esta acción no se puede deshacer.
             </p>
           </div>
 
@@ -283,7 +283,7 @@ function AdminDashboard() {
                 fontSize: '0.95rem',
               }}
             >
-              Go back
+              Volver
             </button>
             <button
               type="button"
@@ -300,7 +300,7 @@ function AdminDashboard() {
                 fontSize: '0.95rem',
               }}
             >
-              {deleteModal.loading ? 'Cancelling...' : 'Yes, cancel event'}
+              {deleteModal.loading ? 'Cancelando...' : 'Sí, cancelar evento'}
             </button>
           </div>
         </div>
