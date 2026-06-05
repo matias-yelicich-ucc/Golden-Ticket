@@ -12,3 +12,8 @@ type Ticket struct {
 	Estado      string    `gorm:"type:varchar(50);not null;default:'activo'" json:"estado"` // 'activo' o 'cancelado'
 	FechaCompra time.Time `gorm:"type:timestamp;default:CURRENT_TIMESTAMP" json:"fecha_compra"`
 }
+
+// TicketPurchaseDTO se utiliza para la solicitud de compra de entradas
+type TicketPurchaseDTO struct {
+	Cantidad int `json:"cantidad" binding:"required,gt=0"`
+}

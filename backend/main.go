@@ -32,6 +32,10 @@ func main() {
 	eventService := services.NewEventService(eventDAO)
 	eventController := controllers.NewEventController(eventService)
 
+	ticketDAO := dao.NewTicketDAO()
+	ticketService := services.NewTicketService(ticketDAO)
+	ticketController := controllers.NewTicketController(ticketService)
+
 	// Setup Router
 	r := gin.Default()
 
@@ -69,6 +73,8 @@ func main() {
 				"rol":     rol,
 			})
 		})
+
+		protected.POST("/events/:id/tickets", ticketController.Buy)
 
 		// Admin-only test route
 		adminOnly := protected.Group("/admin")
