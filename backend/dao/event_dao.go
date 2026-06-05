@@ -7,7 +7,7 @@ import (
 // EventDAO define las operaciones de acceso a datos para los eventos
 type EventDAO interface {
 	Create(event *domain.Event) error
-	GetAll() ([]*domain.Event, error)
+	GetAll(categoria string, buscar string) ([]*domain.Event, error)
 }
 
 type eventDAOImpl struct{}
@@ -17,10 +17,17 @@ func NewEventDAO() EventDAO {
 	return &eventDAOImpl{}
 }
 
-// GetAll obtiene todos los eventos de la base de datos precalificando la relación de Tickets
-func (d *eventDAOImpl) GetAll() ([]*domain.Event, error) {
+// GetAll obtiene los eventos de la base de datos aplicando filtros de categoría y búsqueda
+func (d *eventDAOImpl) GetAll(categoria string, buscar string) ([]*domain.Event, error) {
 	var events []*domain.Event
-	err := DB.Preload("Tickets").Find(&events).Error
+	query := DB.Preload("Tickets")
+	if categoria != "" {
+		query = query.Where("categoria = ?", categoria)
+	}
+	if buscar != "" {
+		query = query.Where("titulo LIKE ? OR descripcion LIKE ?", "%"+buscar+"%", "%"+buscar+"%")
+	}
+	err := query.Find(&events).Error
 	return events, err
 }
 

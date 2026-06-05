@@ -148,17 +148,22 @@ function HelloWorld() {
   const [category, setCategory] = useState('Todos');
   const [menuOpen, setMenuOpen] = useState(false);
   const [events, setEvents] = useState([]);
+  const [allCategories, setAllCategories] = useState(['Todos']);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const isAuthenticated = Boolean(localStorage.getItem('token'));
   const profileMenuRef = useRef(null);
 
+  // Fetch full categories list and initial events once
   useEffect(() => {
+    setLoading(true);
     getEvents()
       .then((response) => {
         const normalized = (response.data || []).map(normalizeEvent);
         setEvents(normalized);
+        const dynamicCategories = Array.from(new Set(normalized.map((event) => event.category)));
+        setAllCategories(['Todos', ...dynamicCategories]);
       })
       .catch((err) => {
         console.error('Error fetching events:', err);
@@ -168,6 +173,44 @@ function HelloWorld() {
         setLoading(false);
       });
   }, []);
+
+  const fetchFilteredEvents = (cat, searchVal) => {
+    setLoading(true);
+    setError('');
+    getEvents({
+      categoria: cat !== 'Todos' ? cat : undefined,
+      buscar: searchVal || undefined,
+    })
+      .then((response) => {
+        const normalized = (response.data || []).map(normalizeEvent);
+        setEvents(normalized);
+      })
+      .catch((err) => {
+        console.error('Error fetching filtered events:', err);
+        setError('No se pudieron obtener los eventos del servidor.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  const handleCategoryChange = (cat) => {
+    setCategory(cat);
+    fetchFilteredEvents(cat, search);
+  };
+
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    fetchFilteredEvents(category, search);
+  };
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearch(val);
+    if (val === '') {
+      fetchFilteredEvents(category, '');
+    }
+  };
 
   const currentUser = useMemo(() => {
     if (!isAuthenticated) return null;
@@ -193,19 +236,6 @@ function HelloWorld() {
   }, [currentUser]);
 
   const isAdmin = ['admin', 'administrador'].includes(currentUser?.rol);
-
-  const categories = useMemo(() => {
-    const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));
-    return ['Todos', ...dynamicCategories];
-  }, [events]);
-
-  const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
-      const matchesCategory = category === 'Todos' || event.category === category;
-      const matchesSearch = !search || `${event.title} ${event.location}`.toLowerCase().includes(search.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [category, search, events]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -298,10 +328,10 @@ function HelloWorld() {
         <div className="hero-content">
           <h1>Encontra los mejores eventos cerca tuyo</h1>
           <p>Descubri conciertos, charlas y espectaculos. Busca, filtra y compra tus entradas desde un solo lugar.</p>
-          <form className="hero-search" onSubmit={(event) => event.preventDefault()}>
+          <form className="hero-search" onSubmit={handleSearchSubmit}>
             <label className="search-field">
               <SearchIcon />
-              <input type="search" placeholder="Que queres ver?" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input type="search" placeholder="Que queres ver?" value={search} onChange={handleSearchChange} />
             </label>
             <button className="location-field" type="button">
               <PinIcon />
@@ -315,8 +345,8 @@ function HelloWorld() {
 
       <section className="filters-bar" aria-label="Filtros de eventos">
         <div className="category-filters">
-          {categories.map((item) => (
-            <button className={item === category ? 'active' : ''} key={item} type="button" onClick={() => setCategory(item)}>
+          {allCategories.map((item) => (
+            <button className={item === category ? 'active' : ''} key={item} type="button" onClick={() => handleCategoryChange(item)}>
               {item}
             </button>
           ))}
@@ -325,12 +355,19 @@ function HelloWorld() {
 
       <section className="events-section">
         <h2>Catalogo de eventos</h2>
-        {filteredEvents.length === 0 && <p className="empty-state">No hay eventos para ese filtro.</p>}
-        <div className="events-grid">
-          {filteredEvents.map((event) => (
-            <EventCard event={event} key={event.id} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="empty-state">Cargando eventos...</p>
+        ) : error ? (
+          <p className="empty-state">{error}</p>
+        ) : events.length === 0 ? (
+          <p className="empty-state">No hay eventos para ese filtro.</p>
+        ) : (
+          <div className="events-grid">
+            {events.map((event) => (
+              <EventCard event={event} key={event.id} />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

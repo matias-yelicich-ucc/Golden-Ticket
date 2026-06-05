@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,8 +28,34 @@ func (m *mockEventDAO) Create(event *domain.Event) error {
 	return nil
 }
 
-func (m *mockEventDAO) GetAll() ([]*domain.Event, error) {
-	return m.events, nil
+func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event, error) {
+	if categoria == "" && buscar == "" {
+		return m.events, nil
+	}
+	var res []*domain.Event
+	for _, e := range m.events {
+		match := true
+		if categoria != "" && e.Categoria != categoria {
+			match = false
+		}
+		if buscar != "" {
+			titleMatch := false
+			descMatch := false
+			if e.Titulo != "" {
+				titleMatch = strings.Contains(strings.ToLower(e.Titulo), strings.ToLower(buscar))
+			}
+			if e.Descripcion != "" {
+				descMatch = strings.Contains(strings.ToLower(e.Descripcion), strings.ToLower(buscar))
+			}
+			if !titleMatch && !descMatch {
+				match = false
+			}
+		}
+		if match {
+			res = append(res, e)
+		}
+	}
+	return res, nil
 }
 
 func TestEventController(t *testing.T) {
@@ -41,6 +68,7 @@ func TestEventController(t *testing.T) {
 	ctrl := NewEventController(eventService)
 
 	router := gin.Default()
+	router.GET("/events", ctrl.List)
 
 	// Setup JWT auth middleware on protected group
 	protected := router.Group("/")
@@ -175,5 +203,79 @@ func TestEventController(t *testing.T) {
 
 	if w5.Code != http.StatusForbidden {
 		t.Errorf("Expected 403 Forbidden, got %d. Body: %s", w5.Code, w5.Body.String())
+	}
+
+	// 6. Seed another event to mock DAO directly for testing GET /events
+	theaterEvent := &domain.Event{
+		Titulo:      "Obra de Teatro",
+		Descripcion: "Comedia dramática en tres actos",
+		Categoria:   "Teatro",
+		Fecha:       futureDate,
+		HoraInicio:  "20:00",
+		HoraFin:     "22:00",
+		Ubicacion:   "Teatro Libertador",
+		Capacidad:   200,
+		Precio:      800.00,
+	}
+	_ = mockDAO.Create(theaterEvent)
+
+	// 7. GET /events (No filters)
+	req6, _ := http.NewRequest("GET", "/events", nil)
+	w6 := httptest.NewRecorder()
+	router.ServeHTTP(w6, req6)
+
+	if w6.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w6.Code, w6.Body.String())
+	}
+
+	var eventsAll []domain.EventResponseDTO
+	_ = json.Unmarshal(w6.Body.Bytes(), &eventsAll)
+	if len(eventsAll) != 2 {
+		t.Errorf("Expected 2 events, got %d", len(eventsAll))
+	}
+
+	// 8. GET /events?categoria=Teatro (Filter by category)
+	req7, _ := http.NewRequest("GET", "/events?categoria=Teatro", nil)
+	w7 := httptest.NewRecorder()
+	router.ServeHTTP(w7, req7)
+
+	if w7.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", w7.Code)
+	}
+
+	var eventsTeatro []domain.EventResponseDTO
+	_ = json.Unmarshal(w7.Body.Bytes(), &eventsTeatro)
+	if len(eventsTeatro) != 1 || eventsTeatro[0].Titulo != "Obra de Teatro" {
+		t.Errorf("Expected 1 event ('Obra de Teatro'), got %d", len(eventsTeatro))
+	}
+
+	// 9. GET /events?buscar=Rock (Filter by search keyword)
+	req8, _ := http.NewRequest("GET", "/events?buscar=Rock", nil)
+	w8 := httptest.NewRecorder()
+	router.ServeHTTP(w8, req8)
+
+	if w8.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", w8.Code)
+	}
+
+	var eventsRock []domain.EventResponseDTO
+	_ = json.Unmarshal(w8.Body.Bytes(), &eventsRock)
+	if len(eventsRock) != 1 || eventsRock[0].Titulo != "Concierto de Rock" {
+		t.Errorf("Expected 1 event ('Concierto de Rock'), got %d", len(eventsRock))
+	}
+
+	// 10. GET /events?categoria=Música&buscar=Obra (Combined filtering, no match)
+	req9, _ := http.NewRequest("GET", "/events?categoria=M\u00fasica&buscar=Obra", nil)
+	w9 := httptest.NewRecorder()
+	router.ServeHTTP(w9, req9)
+
+	if w9.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", w9.Code)
+	}
+
+	var eventsCombined []domain.EventResponseDTO
+	_ = json.Unmarshal(w9.Body.Bytes(), &eventsCombined)
+	if len(eventsCombined) != 0 {
+		t.Errorf("Expected 0 events, got %d", len(eventsCombined))
 	}
 }

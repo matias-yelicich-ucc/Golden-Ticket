@@ -38,9 +38,12 @@ func (ctrl *EventController) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, res)
 }
 
-// List maneja el endpoint para obtener todos los eventos (GET /events)
+// List maneja el endpoint para obtener todos los eventos (GET /events) con filtrado opcional
 func (ctrl *EventController) List(c *gin.Context) {
-	res, err := ctrl.eventService.GetAllEvents()
+	categoria := c.Query("categoria")
+	buscar := c.Query("buscar")
+
+	res, err := ctrl.eventService.GetAllEvents(categoria, buscar)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
