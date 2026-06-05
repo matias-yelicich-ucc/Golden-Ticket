@@ -122,7 +122,7 @@ const EventCard = ({ event }) => (
         <div className="event-divider" />
         <div className="event-footer">
           <div>
-            <span>DESDE</span>
+            <span>PRECIO</span>
             <strong>{event.price}</strong>
           </div>
           <span className="event-detail-cta">Ver detalle</span>
