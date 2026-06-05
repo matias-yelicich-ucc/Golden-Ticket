@@ -69,7 +69,7 @@ Retornado cuando la entrada es cancelada con éxito.
   >
   > ¿Estás seguro de que deseas cancelar tu entrada para el evento **[Nombre del Evento]**?
   >
-  > Se reembolsará el importe de **$[Precio]** a tu medio de pago original de forma automática.
+  > Se reembolsará el dinero a tu medio de pago original de forma automática.
 * Botón **"Confirmar Cancelación"** (color rojo/alerta).
 * Botón **"Volver"** (color secundario/gris).
 * Manejo de estado de carga: deshabilitar botones y mostrar loader mientras la API responde.

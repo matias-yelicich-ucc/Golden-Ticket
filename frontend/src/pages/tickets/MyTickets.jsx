@@ -653,7 +653,7 @@ function MyTickets() {
               marginBottom: '20px',
               textAlign: 'left'
             }}>
-              <strong>Aviso de Reembolso:</strong> Se realizará la devolución del importe de <strong>${cancelModal.ticket.event?.precio || '0'}</strong> a tu medio de pago original de forma automática. El cupo será liberado.
+              <strong>Aviso de Reembolso:</strong> Se realizará la devolución del dinero a tu medio de pago original de forma automática. El cupo será liberado.
             </div>
 
             {cancelModal.error && (

@@ -17,8 +17,7 @@ Se desarrollaron y registraron los siguientes componentes:
 * **API Client (`frontend/src/services/api/client.js`)**: Función `cancelTicket(ticketId)`.
 * **Pantalla de Entradas (`frontend/src/pages/tickets/MyTickets.jsx`)**:
   * Botón activo de cancelación para tickets `"activo"`.
-  * Etiqueta roja inactiva para tickets `"cancelado"`.
-  * Modal premium de confirmación de cancelación con mensaje de devolución y precio dinámico.
+  * Modal premium de confirmación de cancelación con mensaje de devolución.
   * Lógica de llamado, loader, éxito, error y recarga de la lista.
 
 ## 3. Estado del Proyecto

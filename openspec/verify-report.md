@@ -30,7 +30,6 @@ Se ejecutó `go test ./...` en el directorio `backend`:
 * Muestra de la etiqueta `"Cancelado"` con color de advertencia (`#ef4444`) para tickets no activos.
 * Modal de confirmación estilizado con estética premium que muestra:
   - Mensaje detallado de devolución de dinero y liberación del cupo.
-  - Importe dinámico del precio reembolsado.
   - Estados de carga (loading) y deshabilitación durante la llamada HTTP.
   - Notificaciones de éxito/error integradas dentro del propio modal.
   - Recarga automática de la lista tras confirmación.
