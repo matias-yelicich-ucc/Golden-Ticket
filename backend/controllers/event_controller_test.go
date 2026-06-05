@@ -48,6 +48,16 @@ func (m *mockEventDAO) Update(event *domain.Event) error {
 	return errors.New("event not found")
 }
 
+func (m *mockEventDAO) Delete(id uint) error {
+	for i, e := range m.events {
+		if e.ID == id {
+			m.events = append(m.events[:i], m.events[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("event not found")
+}
+
 func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event, error) {
 	if categoria == "" && buscar == "" {
 		return m.events, nil
@@ -100,6 +110,7 @@ func TestEventController(t *testing.T) {
 		{
 			adminOnly.POST("/events", ctrl.Create)
 			adminOnly.PUT("/events/:id", ctrl.Update)
+			adminOnly.DELETE("/events/:id", ctrl.Delete)
 		}
 	}
 
@@ -424,5 +435,57 @@ func TestEventController(t *testing.T) {
 
 	if w18.Code != http.StatusUnprocessableEntity {
 		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w18.Code, w18.Body.String())
+	}
+
+	// Clear injected tickets before delete test
+	mockDAO.events[0].Tickets = nil
+
+	// 19. Error: delete event without admin token
+	req19, _ := http.NewRequest("DELETE", "/admin/events/1", nil)
+	req19.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w19 := httptest.NewRecorder()
+	router.ServeHTTP(w19, req19)
+
+	if w19.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", w19.Code)
+	}
+
+	// 20. Error: delete non-existent event
+	req20, _ := http.NewRequest("DELETE", "/admin/events/999", nil)
+	req20.Header.Set("Authorization", "Bearer "+adminToken)
+
+	w20 := httptest.NewRecorder()
+	router.ServeHTTP(w20, req20)
+
+	if w20.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d. Body: %s", w20.Code, w20.Body.String())
+	}
+
+	// 21. Error: delete event with invalid ID
+	req21, _ := http.NewRequest("DELETE", "/admin/events/abc", nil)
+	req21.Header.Set("Authorization", "Bearer "+adminToken)
+
+	w21 := httptest.NewRecorder()
+	router.ServeHTTP(w21, req21)
+
+	if w21.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", w21.Code)
+	}
+
+	// 22. Success: admin deletes event 1
+	eventCountBefore := len(mockDAO.events)
+	req22, _ := http.NewRequest("DELETE", "/admin/events/1", nil)
+	req22.Header.Set("Authorization", "Bearer "+adminToken)
+
+	w22 := httptest.NewRecorder()
+	router.ServeHTTP(w22, req22)
+
+	if w22.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w22.Code, w22.Body.String())
+	}
+
+	if len(mockDAO.events) != eventCountBefore-1 {
+		t.Errorf("Expected %d events after delete, got %d", eventCountBefore-1, len(mockDAO.events))
 	}
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import '../../styles/App.css';
 import { adminMetrics } from '../../constants/admin';
-import { getEvents } from '../../services/api/client';
+import { getEvents, deleteEvent } from '../../services/api/client';
 
 const iconMap = {
   calendar: (
@@ -62,6 +62,12 @@ function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    event: null,
+    loading: false,
+    error: '',
+  });
 
   useEffect(() => {
     getEvents()
@@ -77,7 +83,31 @@ function AdminDashboard() {
       });
   }, []);
 
+  const handleDeleteClick = (event) => {
+    setDeleteModal({ isOpen: true, event, loading: false, error: '' });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteModal.event) return;
+    setDeleteModal((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      await deleteEvent(deleteModal.event.id);
+      setEvents((prev) => prev.filter((e) => e.id !== deleteModal.event.id));
+      setDeleteModal({ isOpen: false, event: null, loading: false, error: '' });
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Error al eliminar el evento.';
+      setDeleteModal((prev) => ({ ...prev, loading: false, error: msg }));
+    }
+  };
+
+  const handleDeleteClose = () => {
+    if (!deleteModal.loading) {
+      setDeleteModal({ isOpen: false, event: null, loading: false, error: '' });
+    }
+  };
+
   return (
+    <>
     <main className="admin-page">
       <header className="event-detail-topbar">
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
@@ -178,7 +208,7 @@ function AdminDashboard() {
                     <Link to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
                       <PencilIcon />
                     </Link>
-                    <button type="button" aria-label={`Eliminar ${event.titulo}`}>
+                    <button type="button" aria-label={`Eliminar ${event.titulo}`} onClick={() => handleDeleteClick(event)}>
                       <TrashIcon />
                     </button>
                   </div>
@@ -189,6 +219,94 @@ function AdminDashboard() {
         </section>
       </section>
     </main>
+
+    {/* Delete confirmation modal */}
+    {deleteModal.isOpen && deleteModal.event && (
+      <div className="modal-overlay" onClick={handleDeleteClose}>
+        <div
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: 'linear-gradient(135deg, #1f1d1a 0%, #0c0b0a 100%)',
+            border: '2px solid #d4af37',
+            padding: '32px 28px',
+            borderRadius: '20px',
+            width: 'min(460px, 95%)',
+            boxShadow: '0 24px 70px rgba(0, 0, 0, 0.9)',
+            textAlign: 'center',
+          }}
+        >
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 16px',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+            }}>
+              <svg viewBox="0 0 24 24" style={{ width: '28px', height: '28px', fill: 'none', stroke: '#ef4444', strokeWidth: '2' }}>
+                <path d="M3 6h18" />
+                <path d="M8 6V4h8v2" />
+                <path d="M19 6v14H5V6" />
+                <path d="M10 11v6" />
+                <path d="M14 11v6" />
+              </svg>
+            </div>
+            <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancel event</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+              You are about to cancel <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
+              All active tickets will be cancelled and the money will be refunded to ticket holders.
+              This action cannot be undone.
+            </p>
+          </div>
+
+          {deleteModal.error && (
+            <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '12px' }}>{deleteModal.error}</p>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={handleDeleteClose}
+              disabled={deleteModal.loading}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '10px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)',
+                color: '#fff',
+                cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
+                fontSize: '0.95rem',
+              }}
+            >
+              Go back
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteConfirm}
+              disabled={deleteModal.loading}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '10px',
+                border: 'none',
+                background: deleteModal.loading ? '#666' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                color: '#fff',
+                cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.95rem',
+              }}
+            >
+              {deleteModal.loading ? 'Cancelling...' : 'Yes, cancel event'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

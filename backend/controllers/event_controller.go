@@ -99,3 +99,25 @@ func (ctrl *EventController) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// Delete maneja el endpoint de eliminación de un evento (DELETE /admin/events/:id)
+func (ctrl *EventController) Delete(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		return
+	}
+
+	err = ctrl.eventService.DeleteEvent(uint(id))
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "evento no encontrado" {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Evento eliminado exitosamente"})
+}
+

@@ -249,7 +249,7 @@ function MyTickets() {
                     color: ticket.estado === 'activo' ? '#22c55e' : '#ef4444',
                     border: ticket.estado === 'activo' ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
                   }}>
-                    {ticket.estado === 'activo' ? 'Activo' : 'Cancelado'}
+                    {ticket.estado === 'activo' ? 'Activo' : (ticket.event ? 'Cancelado' : 'Evento cancelado')}
                   </span>
                 </div>
 

@@ -55,9 +55,10 @@ func (d *ticketDAOImpl) BuyTickets(userID uint, eventID uint, cantidad int) ([]d
 
 		// 5. Create tickets
 		for i := 0; i < cantidad; i++ {
+			eid := eventID
 			tickets = append(tickets, domain.Ticket{
 				UserID:      userID,
-				EventID:     eventID,
+				EventID:     &eid,
 				Estado:      "activo",
 				FechaCompra: time.Now(),
 			})

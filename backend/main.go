@@ -92,6 +92,7 @@ func main() {
 			})
 			adminOnly.POST("/events", eventController.Create)
 			adminOnly.PUT("/events/:id", eventController.Update)
+			adminOnly.DELETE("/events/:id", eventController.Delete)
 		}
 	}
 

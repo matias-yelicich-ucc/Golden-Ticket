@@ -16,7 +16,7 @@ type Event struct {
 	UrlImagen   string    `gorm:"type:varchar(255)" json:"url_imagen"`
 	Capacidad   int       `gorm:"not null" json:"capacidad"`
 	Precio      float64   `gorm:"type:decimal(10,2);not null;default:0.0" json:"precio"`
-	Tickets     []Ticket  `gorm:"foreignKey:EventID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"tickets,omitempty"`
+	Tickets     []Ticket  `gorm:"foreignKey:EventID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;" json:"tickets,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }

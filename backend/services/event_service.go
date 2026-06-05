@@ -15,6 +15,7 @@ type EventService interface {
 	GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error)
 	GetEventByID(id uint) (*domain.EventResponseDTO, error)
 	UpdateEvent(id uint, dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
+	DeleteEvent(id uint) error
 }
 
 type eventServiceImpl struct {
@@ -220,5 +221,15 @@ func (s *eventServiceImpl) UpdateEvent(id uint, dto domain.EventCreateDTO) (*dom
 	}
 
 	return &response, nil
+}
+
+// DeleteEvent verifies the event exists and delegates its deletion to the DAO
+func (s *eventServiceImpl) DeleteEvent(id uint) error {
+	_, err := s.eventDAO.GetByID(id)
+	if err != nil {
+		return errors.New("evento no encontrado")
+	}
+
+	return s.eventDAO.Delete(id)
 }
 

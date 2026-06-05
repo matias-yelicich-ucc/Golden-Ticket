@@ -19,6 +19,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func uintPtr(v uint) *uint { return &v }
+
 type mockTicketDAO struct {
 	events  map[uint]*domain.Event
 	tickets []domain.Ticket
@@ -33,7 +35,7 @@ func (m *mockTicketDAO) BuyTickets(userID uint, eventID uint, cantidad int) ([]d
 	// Count active tickets in memory
 	activeCount := 0
 	for _, t := range m.tickets {
-		if t.EventID == eventID && t.Estado == "activo" {
+		if t.EventID != nil && *t.EventID == eventID && t.Estado == "activo" {
 			activeCount++
 		}
 	}
@@ -55,7 +57,7 @@ func (m *mockTicketDAO) BuyTickets(userID uint, eventID uint, cantidad int) ([]d
 		t := domain.Ticket{
 			ID:          uint(len(m.tickets) + 1),
 			UserID:      userID,
-			EventID:     eventID,
+			EventID:     uintPtr(eventID),
 			Estado:      "activo",
 			FechaCompra: time.Now(),
 		}
@@ -70,8 +72,10 @@ func (m *mockTicketDAO) GetByUserID(userID uint) ([]domain.Ticket, error) {
 	var res []domain.Ticket
 	for _, t := range m.tickets {
 		if t.UserID == userID {
-			if ev, exists := m.events[t.EventID]; exists {
+			if t.EventID != nil {
+				if ev, exists := m.events[*t.EventID]; exists {
 				t.Event = ev
+				}
 			}
 			res = append(res, t)
 		}
@@ -137,11 +141,13 @@ func (m *mockTicketDAO) CancelTicket(userID uint, ticketID uint) error {
 		return errors.New("la entrada ya se encuentra cancelada")
 	}
 
-	if ev, exists := m.events[ticket.EventID]; exists && ev != nil {
+	if ticket.EventID != nil {
+		if ev, exists := m.events[*ticket.EventID]; exists && ev != nil {
 		eventDateTimeStr := fmt.Sprintf("%sT%s:00", ev.Fecha, ev.HoraInicio)
 		eventTime, err := time.ParseInLocation("2006-01-02T15:04:05", eventDateTimeStr, time.Local)
 		if err == nil && eventTime.Before(time.Now()) {
 			return errors.New("no se pueden cancelar entradas para un evento que ya ocurrió o está en curso")
+		}
 		}
 	}
 
@@ -436,7 +442,7 @@ func TestTicketController(t *testing.T) {
 	mockDAO.tickets = append(mockDAO.tickets, domain.Ticket{
 		ID:          3,
 		UserID:      2,
-		EventID:     2,
+		EventID:     uintPtr(2),
 		Estado:      "activo",
 		FechaCompra: time.Now(),
 	})

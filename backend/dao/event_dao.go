@@ -2,6 +2,8 @@ package dao
 
 import (
 	"golden-ticket/backend/domain"
+
+	"gorm.io/gorm"
 )
 
 // EventDAO define las operaciones de acceso a datos para los eventos
@@ -10,6 +12,7 @@ type EventDAO interface {
 	GetAll(categoria string, buscar string) ([]*domain.Event, error)
 	GetByID(id uint) (*domain.Event, error)
 	Update(event *domain.Event) error
+	Delete(id uint) error
 }
 
 type eventDAOImpl struct{}
@@ -47,6 +50,27 @@ func (d *eventDAOImpl) Create(event *domain.Event) error {
 
 func (d *eventDAOImpl) Update(event *domain.Event) error {
 	return DB.Save(event).Error
+}
+
+// Delete cancels all active tickets for the event and then deletes the event
+func (d *eventDAOImpl) Delete(id uint) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// Verify the event exists
+		var event domain.Event
+		if err := tx.First(&event, id).Error; err != nil {
+			return err
+		}
+
+		// Cancel all active tickets for this event
+		if err := tx.Model(&domain.Ticket{}).
+			Where("event_id = ? AND estado = ?", id, "activo").
+			Update("estado", "cancelado").Error; err != nil {
+			return err
+		}
+
+		// Delete the event — FK SET NULL will nullify event_id on tickets
+		return tx.Delete(&domain.Event{}, id).Error
+	})
 }
 
 
