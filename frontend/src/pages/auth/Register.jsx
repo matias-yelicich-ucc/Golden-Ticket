@@ -15,6 +15,7 @@ function Register() {
   const [form, setForm] = useState({
     nombre: '',
     apellido: '',
+    dni: '',
     email: '',
     password: '',
   });
@@ -58,17 +59,22 @@ function Register() {
           <form className="login-form" onSubmit={handleSubmit}>
             <div className="input-group">
               <label className="input-label" htmlFor="name">Nombre</label>
-              <input id="name" className="login-input" value={form.nombre} onChange={(e) => handleChange('nombre', e.target.value)} />
+              <input id="name" className="login-input" value={form.nombre} onChange={(e) => handleChange('nombre', e.target.value)} required />
             </div>
 
             <div className="input-group">
               <label className="input-label" htmlFor="lastname">Apellido</label>
-              <input id="lastname" className="login-input" value={form.apellido} onChange={(e) => handleChange('apellido', e.target.value)} />
+              <input id="lastname" className="login-input" value={form.apellido} onChange={(e) => handleChange('apellido', e.target.value)} required />
+            </div>
+
+            <div className="input-group">
+              <label className="input-label" htmlFor="dni">DNI</label>
+              <input id="dni" className="login-input" value={form.dni} onChange={(e) => handleChange('dni', e.target.value)} placeholder="Ej: 12345678" required />
             </div>
 
             <div className="input-group">
               <label className="input-label" htmlFor="register-email">Correo Electronico</label>
-              <input id="register-email" type="email" className="login-input" value={form.email} onChange={(e) => handleChange('email', e.target.value)} />
+              <input id="register-email" type="email" className="login-input" value={form.email} onChange={(e) => handleChange('email', e.target.value)} required />
             </div>
 
             <div className="input-group">

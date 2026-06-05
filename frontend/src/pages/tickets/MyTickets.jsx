@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
-import { getMyTickets } from '../../services/api/client';
+import { getMyTickets, transferTicket } from '../../services/api/client';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
@@ -61,6 +61,14 @@ function MyTickets() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [transferModal, setTransferModal] = useState({
+    isOpen: false,
+    ticket: null,
+    dni: '',
+    loading: false,
+    error: '',
+    success: '',
+  });
   const profileMenuRef = useRef(null);
 
   const isAuthenticated = Boolean(localStorage.getItem('token'));
@@ -254,7 +262,31 @@ function MyTickets() {
                   >
                     Ver Entrada
                   </button>
-                  <button type="button" disabled style={{ opacity: 0.6, cursor: 'not-allowed' }}>Transferir entrada</button>
+                  <button 
+                    type="button" 
+                    disabled={ticket.estado !== 'activo'} 
+                    style={{ 
+                      opacity: ticket.estado === 'activo' ? 1 : 0.6, 
+                      cursor: ticket.estado === 'activo' ? 'pointer' : 'not-allowed',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: ticket.estado === 'activo' ? '#f6df9c' : '#7f7f7f',
+                      border: '1px solid rgba(212, 175, 55, 0.2)'
+                    }}
+                    onClick={() => {
+                      if (ticket.estado === 'activo') {
+                        setTransferModal({
+                          isOpen: true,
+                          ticket,
+                          dni: '',
+                          loading: false,
+                          error: '',
+                          success: ''
+                        });
+                      }
+                    }}
+                  >
+                    Transferir entrada
+                  </button>
                   <button type="button" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: 'rgba(255, 255, 255, 0.05)', color: '#7f7f7f' }}>Cancelar compra</button>
                 </div>
               </article>
@@ -444,6 +476,118 @@ function MyTickets() {
             >
               Cerrar Entrada
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Modal */}
+      {transferModal.isOpen && transferModal.ticket && (
+        <div className="modal-overlay" onClick={() => setTransferModal((prev) => ({ ...prev, isOpen: false, ticket: null }))}>
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              background: '#121212',
+              border: '1px solid rgba(212, 175, 55, 0.3)',
+              borderRadius: '16px',
+              padding: '28px',
+              width: 'min(400px, 90%)',
+              textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)'
+            }}
+          >
+            <h3 style={{ color: '#fff', fontSize: '1.5rem', marginBottom: '8px' }}>Transferir Entrada</h3>
+            <p style={{ color: '#b5ae9d', fontSize: '0.9rem', marginBottom: '20px' }}>
+              Vas a transferir la entrada para <strong>{transferModal.ticket.event?.titulo}</strong> (Código #{transferModal.ticket.id}).
+            </p>
+
+            {transferModal.error && (
+              <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {transferModal.error}
+              </div>
+            )}
+
+            {transferModal.success && (
+              <div style={{ color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {transferModal.success}
+              </div>
+            )}
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!transferModal.dni.trim()) return;
+
+              setTransferModal(prev => ({ ...prev, loading: true, error: '', success: '' }));
+              try {
+                await transferTicket(transferModal.ticket.id, { dni: transferModal.dni.trim() });
+                setTransferModal(prev => ({ ...prev, success: '¡Entrada transferida con éxito!' }));
+                
+                // Refresh tickets after 1.5 seconds
+                setTimeout(() => {
+                  setTransferModal(prev => ({ ...prev, isOpen: false, ticket: null }));
+                  // Fetch tickets list again
+                  setLoading(true);
+                  getMyTickets()
+                    .then((response) => {
+                      setTickets(response.data || []);
+                    })
+                    .catch((err) => {
+                      console.error('Error fetching tickets:', err);
+                    })
+                    .finally(() => {
+                      setLoading(false);
+                    });
+                }, 1500);
+              } catch (err) {
+                const errMsg = err.response?.data?.error || 'No se pudo realizar la transferencia.';
+                setTransferModal(prev => ({ ...prev, error: errMsg, loading: false }));
+              }
+            }}>
+              <div style={{ display: 'grid', gap: '8px', textAlign: 'left', marginBottom: '20px' }}>
+                <label htmlFor="transfer-dni" style={{ color: '#f6df9c', fontSize: '0.85rem', fontWeight: 'bold' }}>DNI del destinatario</label>
+                <input 
+                  id="transfer-dni" 
+                  type="text" 
+                  style={{ 
+                    background: '#1a1a1a', 
+                    border: '1px solid #333', 
+                    borderRadius: '8px', 
+                    color: '#fff', 
+                    padding: '12px',
+                    fontSize: '1rem',
+                    outline: 'none'
+                  }} 
+                  value={transferModal.dni} 
+                  onChange={(e) => setTransferModal(prev => ({ ...prev, dni: e.target.value }))}
+                  placeholder="Ej: 12345678"
+                  required
+                  disabled={transferModal.loading || !!transferModal.success}
+                />
+                <span style={{ color: '#8f8778', fontSize: '0.75rem' }}>
+                  Asegurate de que el destinatario tenga una cuenta creada con este DNI.
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  type="button" 
+                  className="modal-button" 
+                  style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#fff', border: '1px solid #333', cursor: 'pointer' }}
+                  onClick={() => setTransferModal((prev) => ({ ...prev, isOpen: false, ticket: null }))}
+                  disabled={transferModal.loading}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className="modal-button" 
+                  disabled={transferModal.loading || !transferModal.dni.trim() || !!transferModal.success}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {transferModal.loading ? 'Transfiriendo...' : 'Transferir'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
