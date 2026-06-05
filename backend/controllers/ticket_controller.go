@@ -143,3 +143,42 @@ func (ctrl *TicketController) Transfer(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Entrada transferida con éxito"})
 }
 
+// Cancel cancels a ticket (POST /my-tickets/:id/cancel)
+func (ctrl *TicketController) Cancel(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autenticado"})
+		return
+	}
+	userID, ok := userIDVal.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ID de usuario inválido en el contexto"})
+		return
+	}
+
+	ticketIDStr := c.Param("id")
+	ticketID, err := strconv.ParseUint(ticketIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de entrada inválido"})
+		return
+	}
+
+	err = ctrl.ticketService.CancelTicket(userID, uint(ticketID))
+	if err != nil {
+		status := http.StatusBadRequest
+		errStr := err.Error()
+
+		if errStr == "entrada no encontrada" {
+			status = http.StatusNotFound
+		} else if errStr == "no eres el propietario de esta entrada" {
+			status = http.StatusForbidden
+		}
+
+		c.JSON(status, gin.H{"error": errStr})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Entrada cancelada con éxito y cupo liberado"})
+}
+
+

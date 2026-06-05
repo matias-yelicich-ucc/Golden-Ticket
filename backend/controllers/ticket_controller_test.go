@@ -119,6 +119,36 @@ func (m *mockTicketDAO) TransferTicket(userID uint, ticketID uint, destinationDN
 	return nil
 }
 
+func (m *mockTicketDAO) CancelTicket(userID uint, ticketID uint) error {
+	var ticket *domain.Ticket
+	for i := range m.tickets {
+		if m.tickets[i].ID == ticketID {
+			ticket = &m.tickets[i]
+			break
+		}
+	}
+	if ticket == nil {
+		return errors.New("entrada no encontrada")
+	}
+	if ticket.UserID != userID {
+		return errors.New("no eres el propietario de esta entrada")
+	}
+	if ticket.Estado != "activo" {
+		return errors.New("la entrada ya se encuentra cancelada")
+	}
+
+	if ev, exists := m.events[ticket.EventID]; exists && ev != nil {
+		eventDateTimeStr := fmt.Sprintf("%sT%s:00", ev.Fecha, ev.HoraInicio)
+		eventTime, err := time.ParseInLocation("2006-01-02T15:04:05", eventDateTimeStr, time.Local)
+		if err == nil && eventTime.Before(time.Now()) {
+			return errors.New("no se pueden cancelar entradas para un evento que ya ocurrió o está en curso")
+		}
+	}
+
+	ticket.Estado = "cancelado"
+	return nil
+}
+
 func TestTicketController(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("JWT_SECRET", "test_secret_for_ticket_controller")
@@ -158,6 +188,7 @@ func TestTicketController(t *testing.T) {
 		protected.POST("/events/:id/tickets", ctrl.Buy)
 		protected.GET("/my-tickets", ctrl.GetMyTickets)
 		protected.POST("/my-tickets/:id/transfer", ctrl.Transfer)
+		protected.POST("/my-tickets/:id/cancel", ctrl.Cancel)
 	}
 
 	// Helper to generate a valid client token
@@ -360,5 +391,73 @@ func TestTicketController(t *testing.T) {
 
 	if w13.Code != http.StatusBadRequest {
 		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w13.Code, w13.Body.String())
+	}
+
+	// 14. Error: cancel ticket not owned by user
+	// Ticket 2 is owned by user 2 (clientToken). Try to cancel using mariaToken (user 3)
+	req14, _ := http.NewRequest("POST", "/my-tickets/2/cancel", nil)
+	req14.Header.Set("Authorization", "Bearer "+mariaToken)
+
+	w14 := httptest.NewRecorder()
+	router.ServeHTTP(w14, req14)
+
+	if w14.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d. Body: %s", w14.Code, w14.Body.String())
+	}
+
+	// 15. Success: cancel ticket 2 owned by user 2 (clientToken)
+	req15, _ := http.NewRequest("POST", "/my-tickets/2/cancel", nil)
+	req15.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w15 := httptest.NewRecorder()
+	router.ServeHTTP(w15, req15)
+
+	if w15.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w15.Code, w15.Body.String())
+	}
+
+	if mockDAO.tickets[1].Estado != "cancelado" {
+		t.Errorf("Expected ticket 2 Estado to be cancelado, got %s", mockDAO.tickets[1].Estado)
+	}
+
+	// 16. Error: cancel already cancelled ticket
+	req16, _ := http.NewRequest("POST", "/my-tickets/2/cancel", nil)
+	req16.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w16 := httptest.NewRecorder()
+	router.ServeHTTP(w16, req16)
+
+	if w16.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w16.Code, w16.Body.String())
+	}
+
+	// 17. Error: cancel ticket of event that has already occurred (event 2 is in the past)
+	// First let's inject a ticket for event 2 (past event) owned by user 2 in mockDAO
+	mockDAO.tickets = append(mockDAO.tickets, domain.Ticket{
+		ID:          3,
+		UserID:      2,
+		EventID:     2,
+		Estado:      "activo",
+		FechaCompra: time.Now(),
+	})
+	req17, _ := http.NewRequest("POST", "/my-tickets/3/cancel", nil)
+	req17.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w17 := httptest.NewRecorder()
+	router.ServeHTTP(w17, req17)
+
+	if w17.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w17.Code, w17.Body.String())
+	}
+
+	// 18. Error: cancel non-existent ticket
+	req18, _ := http.NewRequest("POST", "/my-tickets/999/cancel", nil)
+	req18.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w18 := httptest.NewRecorder()
+	router.ServeHTTP(w18, req18)
+
+	if w18.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d. Body: %s", w18.Code, w18.Body.String())
 	}
 }

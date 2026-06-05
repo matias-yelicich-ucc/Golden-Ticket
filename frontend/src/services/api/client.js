@@ -22,4 +22,6 @@ export const getEventByID = (id) => api.get(`/events/${id}`);
 export const buyTickets = (eventID, payload) => api.post(`/events/${eventID}/tickets`, payload);
 export const getMyTickets = () => api.get('/my-tickets');
 export const transferTicket = (ticketId, payload) => api.post(`/my-tickets/${ticketId}/transfer`, payload);
+export const cancelTicket = (ticketId) => api.post(`/my-tickets/${ticketId}/cancel`);
+
 

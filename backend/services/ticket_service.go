@@ -9,6 +9,7 @@ type TicketService interface {
 	BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error)
 	GetTicketsByUserID(userID uint) ([]domain.Ticket, error)
 	TransferTicket(userID uint, ticketID uint, destinationDNI string) error
+	CancelTicket(userID uint, ticketID uint) error
 }
 
 type ticketServiceImpl struct {
@@ -31,4 +32,8 @@ func (s *ticketServiceImpl) GetTicketsByUserID(userID uint) ([]domain.Ticket, er
 
 func (s *ticketServiceImpl) TransferTicket(userID uint, ticketID uint, destinationDNI string) error {
 	return s.ticketDAO.TransferTicket(userID, ticketID, destinationDNI)
+}
+
+func (s *ticketServiceImpl) CancelTicket(userID uint, ticketID uint) error {
+	return s.ticketDAO.CancelTicket(userID, ticketID)
 }

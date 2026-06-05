@@ -15,6 +15,7 @@ type TicketDAO interface {
 	BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error)
 	GetByUserID(userID uint) ([]domain.Ticket, error)
 	TransferTicket(userID uint, ticketID uint, destinationDNI string) error
+	CancelTicket(userID uint, ticketID uint) error
 }
 
 type ticketDAOImpl struct{}
@@ -122,3 +123,44 @@ func (d *ticketDAOImpl) TransferTicket(userID uint, ticketID uint, destinationDN
 		return nil
 	})
 }
+
+func (d *ticketDAOImpl) CancelTicket(userID uint, ticketID uint) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		var ticket domain.Ticket
+		// Preload Event to validate event date
+		if err := tx.Preload("Event").First(&ticket, ticketID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("entrada no encontrada")
+			}
+			return err
+		}
+
+		// Verify owner
+		if ticket.UserID != userID {
+			return errors.New("no eres el propietario de esta entrada")
+		}
+
+		// Verify status
+		if ticket.Estado != "activo" {
+			return errors.New("la entrada ya se encuentra cancelada")
+		}
+
+		// Verify event has not started/occurred
+		if ticket.Event != nil {
+			eventDateTimeStr := fmt.Sprintf("%sT%s:00", ticket.Event.Fecha, ticket.Event.HoraInicio)
+			eventTime, err := time.ParseInLocation("2006-01-02T15:04:05", eventDateTimeStr, time.Local)
+			if err == nil && eventTime.Before(time.Now()) {
+				return errors.New("no se pueden cancelar entradas para un evento que ya ocurrió o está en curso")
+			}
+		}
+
+		// Update state to cancelado
+		ticket.Estado = "cancelado"
+		if err := tx.Save(&ticket).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
-import { getMyTickets, transferTicket } from '../../services/api/client';
+import { getMyTickets, transferTicket, cancelTicket } from '../../services/api/client';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
@@ -65,6 +65,13 @@ function MyTickets() {
     isOpen: false,
     ticket: null,
     dni: '',
+    loading: false,
+    error: '',
+    success: '',
+  });
+  const [cancelModal, setCancelModal] = useState({
+    isOpen: false,
+    ticket: null,
     loading: false,
     error: '',
     success: '',
@@ -287,7 +294,30 @@ function MyTickets() {
                   >
                     Transferir entrada
                   </button>
-                  <button type="button" disabled style={{ opacity: 0.6, cursor: 'not-allowed', background: 'rgba(255, 255, 255, 0.05)', color: '#7f7f7f' }}>Cancelar compra</button>
+                  <button 
+                    type="button" 
+                    disabled={ticket.estado !== 'activo'} 
+                    style={{ 
+                      opacity: ticket.estado === 'activo' ? 1 : 0.6, 
+                      cursor: ticket.estado === 'activo' ? 'pointer' : 'not-allowed',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      color: ticket.estado === 'activo' ? '#ff6b6b' : '#7f7f7f',
+                      border: ticket.estado === 'activo' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(255, 255, 255, 0.05)'
+                    }}
+                    onClick={() => {
+                      if (ticket.estado === 'activo') {
+                        setCancelModal({
+                          isOpen: true,
+                          ticket,
+                          loading: false,
+                          error: '',
+                          success: ''
+                        });
+                      }
+                    }}
+                  >
+                    Cancelar compra
+                  </button>
                 </div>
               </article>
             ))}
@@ -588,6 +618,106 @@ function MyTickets() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Modal */}
+      {cancelModal.isOpen && cancelModal.ticket && (
+        <div className="modal-overlay" onClick={() => setCancelModal((prev) => ({ ...prev, isOpen: false, ticket: null }))}>
+          <div 
+            className="modal-content" 
+            onClick={(e) => e.stopPropagation()} 
+            style={{ 
+              background: '#121212',
+              border: '1px solid rgba(239, 68, 68, 0.4)',
+              borderRadius: '16px',
+              padding: '28px',
+              width: 'min(420px, 90%)',
+              textAlign: 'center',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)'
+            }}
+          >
+            <h3 style={{ color: '#fff', fontSize: '1.5rem', marginBottom: '8px' }}>Confirmar Cancelación</h3>
+            <p style={{ color: '#b5ae9d', fontSize: '0.9rem', marginBottom: '20px' }}>
+              ¿Estás seguro de que deseas cancelar la entrada para <strong>{cancelModal.ticket.event?.titulo}</strong> (Código #{cancelModal.ticket.id})?
+            </p>
+            
+            <div style={{ 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.2)', 
+              padding: '12px 16px', 
+              borderRadius: '8px', 
+              fontSize: '0.9rem', 
+              color: '#ef4444', 
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              <strong>Aviso de Reembolso:</strong> Se realizará la devolución del importe de <strong>${cancelModal.ticket.event?.precio || '0'}</strong> a tu medio de pago original de forma automática. El cupo será liberado.
+            </div>
+
+            {cancelModal.error && (
+              <div style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {cancelModal.error}
+              </div>
+            )}
+
+            {cancelModal.success && (
+              <div style={{ color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', marginBottom: '16px' }}>
+                {cancelModal.success}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                type="button" 
+                className="modal-button" 
+                style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#fff', border: '1px solid #333', cursor: 'pointer' }}
+                onClick={() => setCancelModal((prev) => ({ ...prev, isOpen: false, ticket: null }))}
+                disabled={cancelModal.loading}
+              >
+                Volver
+              </button>
+              <button 
+                type="button" 
+                className="modal-button" 
+                disabled={cancelModal.loading || !!cancelModal.success}
+                style={{ 
+                  cursor: 'pointer',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                  color: '#fff',
+                  border: 'none'
+                }}
+                onClick={async () => {
+                  setCancelModal(prev => ({ ...prev, loading: true, error: '', success: '' }));
+                  try {
+                    await cancelTicket(cancelModal.ticket.id);
+                    setCancelModal(prev => ({ ...prev, success: '¡Cancelación exitosa! Tu cupo ha sido liberado.' }));
+                    
+                    // Refresh tickets list after 1.5 seconds
+                    setTimeout(() => {
+                      setCancelModal(prev => ({ ...prev, isOpen: false, ticket: null }));
+                      setLoading(true);
+                      getMyTickets()
+                        .then((response) => {
+                          setTickets(response.data || []);
+                        })
+                        .catch((err) => {
+                          console.error('Error fetching tickets:', err);
+                        })
+                        .finally(() => {
+                          setLoading(false);
+                        });
+                    }, 1500);
+                  } catch (err) {
+                    const errMsg = err.response?.data?.error || 'No se pudo cancelar la entrada.';
+                    setCancelModal(prev => ({ ...prev, error: errMsg, loading: false }));
+                  }
+                }}
+              >
+                {cancelModal.loading ? 'Cancelando...' : 'Confirmar Cancelación'}
+              </button>
+            </div>
           </div>
         </div>
       )}
