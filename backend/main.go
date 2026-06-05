@@ -54,6 +54,7 @@ func main() {
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
 	r.GET("/events", eventController.List)
+	r.GET("/events/:id", eventController.GetByID)
 
 	// Protected routes (to verify JWT and roles middleware)
 	protected := r.Group("/")

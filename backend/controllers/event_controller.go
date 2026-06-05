@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"golden-ticket/backend/domain"
 	"golden-ticket/backend/services"
@@ -46,6 +47,24 @@ func (ctrl *EventController) List(c *gin.Context) {
 	res, err := ctrl.eventService.GetAllEvents(categoria, buscar)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// GetByID maneja el endpoint para obtener un evento por su ID (GET /events/:id)
+func (ctrl *EventController) GetByID(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		return
+	}
+
+	res, err := ctrl.eventService.GetEventByID(uint(id))
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Evento no encontrado"})
 		return
 	}
 

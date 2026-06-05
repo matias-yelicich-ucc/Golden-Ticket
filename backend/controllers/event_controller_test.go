@@ -3,6 +3,7 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -26,6 +27,15 @@ func (m *mockEventDAO) Create(event *domain.Event) error {
 	event.ID = uint(len(m.events) + 1)
 	m.events = append(m.events, event)
 	return nil
+}
+
+func (m *mockEventDAO) GetByID(id uint) (*domain.Event, error) {
+	for _, e := range m.events {
+		if e.ID == id {
+			return e, nil
+		}
+	}
+	return nil, errors.New("event not found")
 }
 
 func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event, error) {
@@ -69,6 +79,7 @@ func TestEventController(t *testing.T) {
 
 	router := gin.Default()
 	router.GET("/events", ctrl.List)
+	router.GET("/events/:id", ctrl.GetByID)
 
 	// Setup JWT auth middleware on protected group
 	protected := router.Group("/")
@@ -277,5 +288,38 @@ func TestEventController(t *testing.T) {
 	_ = json.Unmarshal(w9.Body.Bytes(), &eventsCombined)
 	if len(eventsCombined) != 0 {
 		t.Errorf("Expected 0 events, got %d", len(eventsCombined))
+	}
+
+	// 11. GET /events/1 (Success: single event by ID)
+	req10, _ := http.NewRequest("GET", "/events/1", nil)
+	w10 := httptest.NewRecorder()
+	router.ServeHTTP(w10, req10)
+
+	if w10.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w10.Code, w10.Body.String())
+	}
+
+	var eventDetail domain.EventResponseDTO
+	_ = json.Unmarshal(w10.Body.Bytes(), &eventDetail)
+	if eventDetail.ID != 1 || eventDetail.Titulo != "Concierto de Rock" {
+		t.Errorf("Expected event with ID 1 and title 'Concierto de Rock', got ID %d and title '%s'", eventDetail.ID, eventDetail.Titulo)
+	}
+
+	// 12. GET /events/999 (Error: event not found)
+	req11, _ := http.NewRequest("GET", "/events/999", nil)
+	w11 := httptest.NewRecorder()
+	router.ServeHTTP(w11, req11)
+
+	if w11.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d", w11.Code)
+	}
+
+	// 13. GET /events/abc (Error: invalid ID format)
+	req12, _ := http.NewRequest("GET", "/events/abc", nil)
+	w12 := httptest.NewRecorder()
+	router.ServeHTTP(w12, req12)
+
+	if w12.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", w12.Code)
 	}
 }

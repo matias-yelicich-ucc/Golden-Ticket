@@ -8,6 +8,7 @@ import (
 type EventDAO interface {
 	Create(event *domain.Event) error
 	GetAll(categoria string, buscar string) ([]*domain.Event, error)
+	GetByID(id uint) (*domain.Event, error)
 }
 
 type eventDAOImpl struct{}
@@ -15,6 +16,13 @@ type eventDAOImpl struct{}
 // NewEventDAO crea una nueva instancia de EventDAO
 func NewEventDAO() EventDAO {
 	return &eventDAOImpl{}
+}
+
+// GetByID obtiene un evento por su ID precalificando la relación de Tickets
+func (d *eventDAOImpl) GetByID(id uint) (*domain.Event, error) {
+	var event domain.Event
+	err := DB.Preload("Tickets").First(&event, id).Error
+	return &event, err
 }
 
 // GetAll obtiene los eventos de la base de datos aplicando filtros de categoría y búsqueda

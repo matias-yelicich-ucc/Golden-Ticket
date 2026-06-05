@@ -13,6 +13,7 @@ import (
 type EventService interface {
 	CreateEvent(dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
 	GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error)
+	GetEventByID(id uint) (*domain.EventResponseDTO, error)
 }
 
 type eventServiceImpl struct {
@@ -112,4 +113,39 @@ func (s *eventServiceImpl) GetAllEvents(categoria string, buscar string) ([]*dom
 	}
 
 	return response, nil
+}
+
+// GetEventByID obtiene un evento por su ID y calcula la disponibilidad de entradas
+func (s *eventServiceImpl) GetEventByID(id uint) (*domain.EventResponseDTO, error) {
+	event, err := s.eventDAO.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calcular entradas vendidas dinámicamente
+	entradasVendidas := 0
+	for _, ticket := range event.Tickets {
+		if ticket.Estado == "activo" {
+			entradasVendidas++
+		}
+	}
+	entradasDisponibles := event.Capacidad - entradasVendidas
+
+	response := domain.EventResponseDTO{
+		ID:                  event.ID,
+		Titulo:              event.Titulo,
+		Descripcion:         event.Descripcion,
+		Categoria:           event.Categoria,
+		Fecha:               event.Fecha,
+		HoraInicio:          event.HoraInicio,
+		HoraFin:             event.HoraFin,
+		Ubicacion:           event.Ubicacion,
+		Coordenadas:         event.Coordenadas,
+		UrlImagen:           event.UrlImagen,
+		Capacidad:           event.Capacidad,
+		EntradasDisponibles: entradasDisponibles,
+		Precio:              event.Precio,
+	}
+
+	return &response, nil
 }
