@@ -14,6 +14,7 @@ import (
 type TicketDAO interface {
 	BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error)
 	GetByUserID(userID uint) ([]domain.Ticket, error)
+	TransferTicket(userID uint, ticketID uint, destinationDNI string) error
 }
 
 type ticketDAOImpl struct{}
@@ -75,4 +76,49 @@ func (d *ticketDAOImpl) GetByUserID(userID uint) ([]domain.Ticket, error) {
 	var tickets []domain.Ticket
 	err := DB.Preload("Event").Where("user_id = ?", userID).Find(&tickets).Error
 	return tickets, err
+}
+
+func (d *ticketDAOImpl) TransferTicket(userID uint, ticketID uint, destinationDNI string) error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		// 1. Fetch ticket
+		var ticket domain.Ticket
+		if err := tx.First(&ticket, ticketID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("entrada no encontrada")
+			}
+			return err
+		}
+
+		// 2. Verify owner
+		if ticket.UserID != userID {
+			return errors.New("no eres el propietario de esta entrada")
+		}
+
+		// 3. Verify status
+		if ticket.Estado != "activo" {
+			return errors.New("no se puede transferir una entrada cancelada")
+		}
+
+		// 4. Fetch destination user by DNI
+		var destUser domain.User
+		if err := tx.Where("dni = ?", destinationDNI).First(&destUser).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("no existe ningún usuario registrado con el DNI ingresado")
+			}
+			return err
+		}
+
+		// 5. Verify it's not transferring to oneself
+		if destUser.ID == userID {
+			return errors.New("no podés transferirte una entrada a vos mismo")
+		}
+
+		// 6. Update ticket owner
+		ticket.UserID = destUser.ID
+		if err := tx.Save(&ticket).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }

@@ -89,3 +89,57 @@ func (ctrl *TicketController) GetMyTickets(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tickets)
 }
+
+// TicketTransferDTO represents the payload for transferring a ticket
+type TicketTransferDTO struct {
+	DNI string `json:"dni" binding:"required"`
+}
+
+// Transfer transfers a ticket to another user by DNI (POST /my-tickets/:id/transfer)
+func (ctrl *TicketController) Transfer(c *gin.Context) {
+	// 1. Get user ID from Auth context
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autenticado"})
+		return
+	}
+	userID, ok := userIDVal.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ID de usuario inválido en el contexto"})
+		return
+	}
+
+	// 2. Get ticket ID from route
+	ticketIDStr := c.Param("id")
+	ticketID, err := strconv.ParseUint(ticketIDStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de entrada inválido"})
+		return
+	}
+
+	// 3. Bind JSON body
+	var dto TicketTransferDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "DNI es requerido"})
+		return
+	}
+
+	// 4. Perform transfer
+	err = ctrl.ticketService.TransferTicket(userID, uint(ticketID), dto.DNI)
+	if err != nil {
+		status := http.StatusBadRequest
+		errStr := err.Error()
+
+		if errStr == "entrada no encontrada" || errStr == "no existe ningún usuario registrado con el DNI ingresado" {
+			status = http.StatusNotFound
+		} else if errStr == "no eres el propietario de esta entrada" {
+			status = http.StatusForbidden
+		}
+
+		c.JSON(status, gin.H{"error": errStr})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Entrada transferida con éxito"})
+}
+

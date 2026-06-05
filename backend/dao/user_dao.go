@@ -8,6 +8,7 @@ import (
 type UserDAO interface {
 	Create(user *domain.User) error
 	GetByEmail(email string) (*domain.User, error)
+	GetByDNI(dni string) (*domain.User, error)
 }
 
 type userDAOImpl struct{}
@@ -26,6 +27,16 @@ func (d *userDAOImpl) Create(user *domain.User) error {
 func (d *userDAOImpl) GetByEmail(email string) (*domain.User, error) {
 	var user domain.User
 	err := DB.Where("email = ?", email).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// GetByDNI retrieves a user by their DNI
+func (d *userDAOImpl) GetByDNI(dni string) (*domain.User, error) {
+	var user domain.User
+	err := DB.Where("dni = ?", dni).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

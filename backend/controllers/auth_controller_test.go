@@ -36,6 +36,15 @@ func (m *mockUserDAO) GetByEmail(email string) (*domain.User, error) {
 	return user, nil
 }
 
+func (m *mockUserDAO) GetByDNI(dni string) (*domain.User, error) {
+	for _, u := range m.users {
+		if u.DNI == dni {
+			return u, nil
+		}
+	}
+	return nil, errors.New("user not found")
+}
+
 func TestAuthController(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("JWT_SECRET", "test_secret_for_controller")
@@ -56,6 +65,7 @@ func TestAuthController(t *testing.T) {
 		Email:    "juan.perez@example.com",
 		Password: "password123",
 		Rol:      "cliente",
+		DNI:      "12345678",
 	}
 	body, _ := json.Marshal(regDTO)
 	req, _ := http.NewRequest("POST", "/register", bytes.NewBuffer(body))

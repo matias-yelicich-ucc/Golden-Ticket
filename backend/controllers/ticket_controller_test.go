@@ -79,6 +79,46 @@ func (m *mockTicketDAO) GetByUserID(userID uint) ([]domain.Ticket, error) {
 	return res, nil
 }
 
+func (m *mockTicketDAO) TransferTicket(userID uint, ticketID uint, destinationDNI string) error {
+	var ticket *domain.Ticket
+	idx := -1
+	for i, t := range m.tickets {
+		if t.ID == ticketID {
+			ticket = &m.tickets[i]
+			idx = i
+			break
+		}
+	}
+	if ticket == nil {
+		return errors.New("entrada no encontrada")
+	}
+
+	if ticket.UserID != userID {
+		return errors.New("no eres el propietario de esta entrada")
+	}
+
+	if ticket.Estado != "activo" {
+		return errors.New("no se puede transferir una entrada cancelada")
+	}
+
+	var destUserID uint
+	if destinationDNI == "87654321" {
+		destUserID = 3
+	} else if destinationDNI == "12345678" {
+		destUserID = 2
+	} else {
+		return errors.New("no existe ningún usuario registrado con el DNI ingresado")
+	}
+
+	if destUserID == userID {
+		return errors.New("no podés transferirte una entrada a vos mismo")
+	}
+
+	ticket.UserID = destUserID
+	m.tickets[idx].UserID = destUserID
+	return nil
+}
+
 func TestTicketController(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("JWT_SECRET", "test_secret_for_ticket_controller")
@@ -117,6 +157,7 @@ func TestTicketController(t *testing.T) {
 	{
 		protected.POST("/events/:id/tickets", ctrl.Buy)
 		protected.GET("/my-tickets", ctrl.GetMyTickets)
+		protected.POST("/my-tickets/:id/transfer", ctrl.Transfer)
 	}
 
 	// Helper to generate a valid client token
@@ -244,5 +285,80 @@ func TestTicketController(t *testing.T) {
 
 	if w8.Code != http.StatusUnauthorized {
 		t.Errorf("Expected 401 Unauthorized, got %d", w8.Code)
+	}
+
+	// 9. Success: transfer ticket 1 to Maria (DNI 87654321)
+	transferPayload := TicketTransferDTO{DNI: "87654321"}
+	bodyTransfer, _ := json.Marshal(transferPayload)
+	req9, _ := http.NewRequest("POST", "/my-tickets/1/transfer", bytes.NewBuffer(bodyTransfer))
+	req9.Header.Set("Authorization", "Bearer "+clientToken)
+	req9.Header.Set("Content-Type", "application/json")
+
+	w9 := httptest.NewRecorder()
+	router.ServeHTTP(w9, req9)
+
+	if w9.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w9.Code, w9.Body.String())
+	}
+
+	// Verify ownership changed in database
+	if mockDAO.tickets[0].UserID != 3 {
+		t.Errorf("Expected owner of ticket 1 to be user 3, got user %d", mockDAO.tickets[0].UserID)
+	}
+
+	// 10. Error: transfer ticket you don't own (otherToken belongs to user 99, tries to transfer ticket 1, now owned by user 3)
+	req10, _ := http.NewRequest("POST", "/my-tickets/1/transfer", bytes.NewBuffer(bodyTransfer))
+	req10.Header.Set("Authorization", "Bearer "+otherToken)
+	req10.Header.Set("Content-Type", "application/json")
+
+	w10 := httptest.NewRecorder()
+	router.ServeHTTP(w10, req10)
+
+	if w10.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", w10.Code)
+	}
+
+	// 11. Error: transfer to non-existent DNI
+	transferInvalidPayload := TicketTransferDTO{DNI: "99999999"}
+	bodyInvalidTransfer, _ := json.Marshal(transferInvalidPayload)
+	// Maria (user 3) now owns ticket 1. Let's generate a token for user 3
+	mariaToken, _ := utils.GenerateToken(3, "cliente")
+	req11, _ := http.NewRequest("POST", "/my-tickets/1/transfer", bytes.NewBuffer(bodyInvalidTransfer))
+	req11.Header.Set("Authorization", "Bearer "+mariaToken)
+	req11.Header.Set("Content-Type", "application/json")
+
+	w11 := httptest.NewRecorder()
+	router.ServeHTTP(w11, req11)
+
+	if w11.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d. Body: %s", w11.Code, w11.Body.String())
+	}
+
+	// 12. Error: transfer to oneself
+	transferSelfPayload := TicketTransferDTO{DNI: "87654321"} // Maria (user 3) DNI
+	bodySelfTransfer, _ := json.Marshal(transferSelfPayload)
+	req12, _ := http.NewRequest("POST", "/my-tickets/1/transfer", bytes.NewBuffer(bodySelfTransfer))
+	req12.Header.Set("Authorization", "Bearer "+mariaToken)
+	req12.Header.Set("Content-Type", "application/json")
+
+	w12 := httptest.NewRecorder()
+	router.ServeHTTP(w12, req12)
+
+	if w12.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w12.Code, w12.Body.String())
+	}
+
+	// 13. Error: transfer cancelled ticket
+	// Cancel ticket 1 in memory
+	mockDAO.tickets[0].Estado = "cancelado"
+	req13, _ := http.NewRequest("POST", "/my-tickets/1/transfer", bytes.NewBuffer(bodyTransfer))
+	req13.Header.Set("Authorization", "Bearer "+mariaToken)
+	req13.Header.Set("Content-Type", "application/json")
+
+	w13 := httptest.NewRecorder()
+	router.ServeHTTP(w13, req13)
+
+	if w13.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w13.Code, w13.Body.String())
 	}
 }

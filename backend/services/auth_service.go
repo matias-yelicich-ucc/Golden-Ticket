@@ -59,6 +59,7 @@ func (s *authServiceImpl) Register(dto domain.UserRegisterDTO) (*domain.UserResp
 		Email:    emailNormalized,
 		Password: hashedPassword,
 		Rol:      role,
+		DNI:      dto.DNI,
 	}
 
 	if err := s.userDAO.Create(&user); err != nil {
@@ -71,6 +72,7 @@ func (s *authServiceImpl) Register(dto domain.UserRegisterDTO) (*domain.UserResp
 		Apellido: user.Apellido,
 		Email:    user.Email,
 		Rol:      user.Rol,
+		DNI:      user.DNI,
 	}
 
 	return &response, nil
@@ -101,6 +103,7 @@ func (s *authServiceImpl) Login(dto domain.UserLoginDTO) (*domain.LoginResponseD
 			Apellido: user.Apellido,
 			Email:    user.Email,
 			Rol:      user.Rol,
+			DNI:      user.DNI,
 		},
 		Token: token,
 	}
