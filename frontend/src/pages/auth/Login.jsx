@@ -131,7 +131,7 @@ function Login() {
                   type="button"
                   className={`password-toggle ${errors.password ? 'has-error' : ''}`}
                   onClick={() => setShowPassword((current) => !current)}
-                  aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   aria-pressed={showPassword}
                 >
                   <EyeIcon open={showPassword} />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Login.css';
-import { registerUser } from '../../services/api/client';
+import { loginUser, registerUser } from '../../services/api/client';
 
 const EyeIcon = ({ open }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -36,8 +36,15 @@ function Register() {
     setLoading(true);
     try {
       await registerUser(form);
-      setSuccess('Cuenta creada con exito. Te llevamos a la home.');
-      setTimeout(() => navigate('/'), 1200);
+      const loginResponse = await loginUser({
+        email: form.email,
+        password: form.password,
+      });
+
+      localStorage.setItem('token', loginResponse.data.token);
+      localStorage.setItem('user', JSON.stringify(loginResponse.data.user));
+      setSuccess('Cuenta creada con exito. Iniciando sesion...');
+      navigate('/');
     } catch (requestError) {
       setError(requestError.response?.data?.error || 'No se pudo registrar el usuario');
     } finally {
@@ -78,7 +85,7 @@ function Register() {
             </div>
 
             <div className="input-group">
-              <label className="input-label" htmlFor="register-password">Contrasena</label>
+              <label className="input-label" htmlFor="register-password">Contraseña</label>
               <div className="input-wrapper">
                 <input
                   id="register-password"
@@ -91,7 +98,7 @@ function Register() {
                   type="button"
                   className="password-toggle"
                   onClick={() => setShowPassword((current) => !current)}
-                  aria-label={showPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   aria-pressed={showPassword}
                 >
                   <EyeIcon open={showPassword} />
