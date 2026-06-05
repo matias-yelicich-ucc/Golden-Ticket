@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
 import { getEventByID, buyTickets } from '../../services/api/client';
@@ -61,8 +61,8 @@ const normalizeEvent = (dbEvent) => {
     slug: slugify(dbEvent.titulo, dbEvent.id),
     title: dbEvent.titulo,
     subtitle: dbEvent.descripcion || 'Detalles del evento.',
-    description: [dbEvent.descripcion || 'Sin descripción.'],
-    category: dbEvent.categoria || 'Música',
+    description: [dbEvent.descripcion || 'Sin descripciÃ³n.'],
+    category: dbEvent.categoria || 'MÃºsica',
     date: dbEvent.fecha,
     fullDate: dbEvent.fecha,
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
@@ -96,30 +96,31 @@ function EventDetail() {
   const isAuthenticated = Boolean(localStorage.getItem('token'));
 
   useEffect(() => {
-    const eventId = slug.split('-').pop();
-    if (!eventId || isNaN(Number(eventId))) {
-      setError('ID de evento inválido.');
-      setLoading(false);
-      return;
-    }
+    const loadEvent = async () => {
+      const eventId = slug.split('-').pop();
+      if (!eventId || isNaN(Number(eventId))) {
+        setError('ID de evento inválido.');
+        setLoading(false);
+        return;
+      }
 
-    getEventByID(eventId)
-      .then((response) => {
+      try {
+        const response = await getEventByID(eventId);
         if (response.data) {
           setEvent(normalizeEvent(response.data));
         } else {
           setEvent(null);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching event detail:', err);
         setError('No se pudo conectar con el servidor o el evento no existe.');
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
-  }, [slug]);
+      }
+    };
 
+    void loadEvent();
+  }, [slug]);
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
@@ -157,7 +158,7 @@ function EventDetail() {
         setModal({
           isOpen: true,
           type: 'success',
-          title: '¡Compra Exitosa!',
+          title: 'Â¡Compra Exitosa!',
           message: `Adquiriste ${quantity} entrada(s) para "${event.title}".`
         });
         setEvent((prev) => ({
@@ -334,3 +335,6 @@ function EventDetail() {
 }
 
 export default EventDetail;
+
+
+

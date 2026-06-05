@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+﻿import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
 import { adminMetrics } from '../../constants/admin';
 import { getEvents, deleteEvent } from '../../services/api/client';
@@ -33,14 +33,6 @@ const iconMap = {
   ),
 };
 
-const BarsIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M5 21V10" />
-    <path d="M12 21V4" />
-    <path d="M19 21v-7" />
-  </svg>
-);
-
 const PencilIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="m12 20 8-8" />
@@ -62,6 +54,7 @@ function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
   const [deleteModal, setDeleteModal] = useState({
     isOpen: false,
     event: null,
@@ -82,6 +75,41 @@ function AdminDashboard() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!deleteModal.isOpen) return undefined;
+
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const previousBodyStyle = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      left: body.style.left,
+      right: body.style.right,
+    };
+    const previousHtmlOverflow = documentElement.style.overflow;
+
+    documentElement.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyStyle.overflow;
+      body.style.position = previousBodyStyle.position;
+      body.style.top = previousBodyStyle.top;
+      body.style.width = previousBodyStyle.width;
+      body.style.left = previousBodyStyle.left;
+      body.style.right = previousBodyStyle.right;
+      window.scrollTo(0, scrollY);
+    };
+  }, [deleteModal.isOpen]);
 
   const handleDeleteClick = (event) => {
     setDeleteModal({ isOpen: true, event, loading: false, error: '' });
@@ -106,18 +134,20 @@ function AdminDashboard() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   return (
     <>
     <main className="admin-page">
       <header className="event-detail-topbar">
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
-        <nav className="event-detail-nav">
-          <Link to="/">Eventos</Link>
-          <Link to="/admin" className="is-active">Panel admin</Link>
-          <Link to="/mis-entradas">Mis entradas</Link>
-        </nav>
         <div className="event-detail-actions">
-          <Link className="event-detail-login" to="/admin/eventos/nuevo">Crear evento</Link>
+          <Link className="admin-topbar-cta" to="/admin/eventos/nuevo">+ Crear evento</Link>
+          <button type="button" onClick={handleLogout}>Cerrar sesion</button>
         </div>
       </header>
 
@@ -125,10 +155,7 @@ function AdminDashboard() {
         <div className="admin-heading">
           <div>
             <span className="admin-kicker">Panel de administracion</span>
-            <h1>Controla tu calendario de eventos y sus metricas clave.</h1>
-            <p>Gestiona los proximos lanzamientos, capacidad y ventas en tiempo real con datos de tu base de datos.</p>
           </div>
-          <Link className="admin-primary-link" to="/admin/eventos/nuevo">+ Crear evento</Link>
         </div>
 
         <section className="admin-metrics-grid">
@@ -136,7 +163,6 @@ function AdminDashboard() {
             <article className="admin-metric-card" key={metric.id}>
               <div className="admin-metric-top">
                 <span className="admin-metric-icon">{iconMap[metric.icon]}</span>
-                <span className={`admin-delta admin-delta-${metric.tone}`}>{metric.delta}</span>
               </div>
               <span className="admin-metric-label">{metric.label}</span>
               <strong>{metric.value}</strong>
@@ -148,9 +174,7 @@ function AdminDashboard() {
           <div className="admin-table-header">
             <div>
               <h2>Eventos proximos</h2>
-              <p>Listado en tiempo real desde la base de datos.</p>
             </div>
-            <Link to="/admin/eventos/nuevo">Ver todos</Link>
           </div>
 
           <div className="admin-table">
@@ -166,7 +190,9 @@ function AdminDashboard() {
             {loading && <p className="empty-state">Cargando eventos...</p>}
             {error && <p className="empty-state" style={{ color: '#ff6b6b' }}>{error}</p>}
             {!loading && !error && events.length === 0 && (
-              <p className="empty-state">No hay eventos creados. ¡Crea el primero para comenzar!</p>
+              <div className="admin-empty-state">
+                <p>No hay eventos creados. Crea el primero para comenzar.</p>
+              </div>
             )}
 
             {!loading && !error && events.map((event) => {
@@ -202,13 +228,10 @@ function AdminDashboard() {
                   </div>
                   <span className={`admin-status admin-status-${statusTone}`}>{status}</span>
                   <div className="admin-actions-cell">
-                    <button type="button" aria-label={`Ver metricas de ${event.titulo}`}>
-                      <BarsIcon />
-                    </button>
-                    <Link to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
+                    <Link className="admin-action-button" to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
                       <PencilIcon />
                     </Link>
-                    <button type="button" aria-label={`Eliminar ${event.titulo}`} onClick={() => handleDeleteClick(event)}>
+                    <button className="admin-action-button" type="button" aria-label={`Eliminar ${event.titulo}`} onClick={() => handleDeleteClick(event)}>
                       <TrashIcon />
                     </button>
                   </div>
@@ -258,9 +281,9 @@ function AdminDashboard() {
             </div>
             <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancelar evento</h3>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              Estás por cancelar <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
-              Todas las entradas activas serán canceladas y el dinero será reintegrado a los compradores.
-              Esta acción no se puede deshacer.
+              EstÃ¡s por cancelar <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
+              Todas las entradas activas serÃ¡n canceladas y el dinero serÃ¡ reintegrado a los compradores.
+              Esta acciÃ³n no se puede deshacer.
             </p>
           </div>
 
@@ -300,7 +323,7 @@ function AdminDashboard() {
                 fontSize: '0.95rem',
               }}
             >
-              {deleteModal.loading ? 'Cancelando...' : 'Sí, cancelar evento'}
+              {deleteModal.loading ? 'Cancelando...' : 'SÃ­, cancelar evento'}
             </button>
           </div>
         </div>
@@ -311,3 +334,4 @@ function AdminDashboard() {
 }
 
 export default AdminDashboard;
+

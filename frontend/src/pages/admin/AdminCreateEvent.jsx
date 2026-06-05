@@ -80,6 +80,39 @@ function AdminCreateEvent() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const previousBodyStyle = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      left: body.style.left,
+      right: body.style.right,
+    };
+    const previousHtmlOverflow = documentElement.style.overflow;
+
+    documentElement.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyStyle.overflow;
+      body.style.position = previousBodyStyle.position;
+      body.style.top = previousBodyStyle.top;
+      body.style.width = previousBodyStyle.width;
+      body.style.left = previousBodyStyle.left;
+      body.style.right = previousBodyStyle.right;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  useEffect(() => {
     if (id) {
       getEventByID(id)
         .then((response) => {
@@ -172,11 +205,7 @@ function AdminCreateEvent() {
 
         <form className="admin-form-card admin-dialog-card" onSubmit={handleSubmit}>
           <div className="admin-dialog-header">
-            <div>
-              <span className="admin-kicker">{id ? 'Editar evento' : 'Crear nuevo evento'}</span>
-              <h1>{id ? 'Actualiza los datos del evento' : 'Completa la ficha del evento'}</h1>
-              <p>{id ? 'Modifica los atributos necesarios del evento seleccionado.' : 'Dialogo frontend para modelar la entidad de eventos y dejar lista la integracion futura del backend.'}</p>
-            </div>
+            <h1>{id ? 'Editar evento' : 'Crear evento'}</h1>
 
             <button type="button" className="admin-dialog-close" onClick={() => navigate('/admin/dashboard')} aria-label="Cerrar dialogo">
               <CloseIcon />
@@ -334,7 +363,7 @@ function AdminCreateEvent() {
             <div className="admin-field">
               <label htmlFor="event-price">Precio *</label>
               <div className="admin-input-icon">
-                <span style={{ fontSize: '1.2rem', padding: '0 4px', color: 'var(--text-muted)' }}>$</span>
+                <span>$</span>
                 <input
                   id="event-price"
                   type="number"
