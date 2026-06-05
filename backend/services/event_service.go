@@ -14,6 +14,7 @@ type EventService interface {
 	CreateEvent(dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
 	GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error)
 	GetEventByID(id uint) (*domain.EventResponseDTO, error)
+	UpdateEvent(id uint, dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
 }
 
 type eventServiceImpl struct {
@@ -149,3 +150,75 @@ func (s *eventServiceImpl) GetEventByID(id uint) (*domain.EventResponseDTO, erro
 
 	return &response, nil
 }
+
+// UpdateEvent actualiza un evento existente validando capacidad y fecha futura
+func (s *eventServiceImpl) UpdateEvent(id uint, dto domain.EventCreateDTO) (*domain.EventResponseDTO, error) {
+	// 1. Fetch event from DAO
+	event, err := s.eventDAO.GetByID(id)
+	if err != nil {
+		return nil, errors.New("evento no encontrado")
+	}
+
+	// 2. Count active tickets
+	activeTicketsCount := 0
+	for _, ticket := range event.Tickets {
+		if ticket.Estado == "activo" {
+			activeTicketsCount++
+		}
+	}
+
+	// 3. Validate capacity limit
+	if dto.Capacidad < activeTicketsCount {
+		return nil, fmt.Errorf("la nueva capacidad (%d) no puede ser menor a las entradas ya vendidas (%d)", dto.Capacidad, activeTicketsCount)
+	}
+
+	// 4. Validate future date
+	eventDateTimeStr := fmt.Sprintf("%sT%s:00", dto.Fecha, dto.HoraInicio)
+	eventTime, err := time.ParseInLocation("2006-01-02T15:04:05", eventDateTimeStr, time.Local)
+	if err != nil {
+		return nil, errors.New("formato de fecha u hora de inicio inválido")
+	}
+
+	if eventTime.Before(time.Now()) {
+		return nil, errors.New("la fecha del evento debe ser en el futuro")
+	}
+
+	// 5. Update fields
+	event.Titulo = dto.Titulo
+	event.Descripcion = dto.Descripcion
+	event.Categoria = dto.Categoria
+	event.Fecha = dto.Fecha
+	event.HoraInicio = dto.HoraInicio
+	event.HoraFin = dto.HoraFin
+	event.Ubicacion = dto.Ubicacion
+	event.Coordenadas = dto.Coordenadas
+	event.UrlImagen = dto.UrlImagen
+	event.Capacidad = dto.Capacidad
+	event.Precio = dto.Precio
+
+	// 6. Save in DAO
+	if err := s.eventDAO.Update(event); err != nil {
+		return nil, err
+	}
+
+	// 7. Map to DTO
+	entradasDisponibles := event.Capacidad - activeTicketsCount
+	response := domain.EventResponseDTO{
+		ID:                  event.ID,
+		Titulo:              event.Titulo,
+		Descripcion:         event.Descripcion,
+		Categoria:           event.Categoria,
+		Fecha:               event.Fecha,
+		HoraInicio:          event.HoraInicio,
+		HoraFin:             event.HoraFin,
+		Ubicacion:           event.Ubicacion,
+		Coordenadas:         event.Coordenadas,
+		UrlImagen:           event.UrlImagen,
+		Capacidad:           event.Capacidad,
+		EntradasDisponibles: entradasDisponibles,
+		Precio:              event.Precio,
+	}
+
+	return &response, nil
+}
+

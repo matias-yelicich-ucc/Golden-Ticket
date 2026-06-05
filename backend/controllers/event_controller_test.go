@@ -38,6 +38,16 @@ func (m *mockEventDAO) GetByID(id uint) (*domain.Event, error) {
 	return nil, errors.New("event not found")
 }
 
+func (m *mockEventDAO) Update(event *domain.Event) error {
+	for i, e := range m.events {
+		if e.ID == event.ID {
+			m.events[i] = event
+			return nil
+		}
+	}
+	return errors.New("event not found")
+}
+
 func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event, error) {
 	if categoria == "" && buscar == "" {
 		return m.events, nil
@@ -89,6 +99,7 @@ func TestEventController(t *testing.T) {
 		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
 			adminOnly.POST("/events", ctrl.Create)
+			adminOnly.PUT("/events/:id", ctrl.Update)
 		}
 	}
 
@@ -321,5 +332,97 @@ func TestEventController(t *testing.T) {
 
 	if w12.Code != http.StatusBadRequest {
 		t.Errorf("Expected 400 Bad Request, got %d", w12.Code)
+	}
+
+	// 14. Success: update event 1 by admin
+	futureDateStr := time.Now().Add(48 * time.Hour).Format("2006-01-02")
+	updateDTO := domain.EventCreateDTO{
+		Titulo:      "Concierto de Rock Recargado",
+		Descripcion: "Nueva descripción para el concierto",
+		Categoria:   "Música",
+		Fecha:       futureDateStr,
+		HoraInicio:  "20:00",
+		HoraFin:     "23:00",
+		Ubicacion:   "Estadio River Plate",
+		Coordenadas: "-34.5453,-58.4497",
+		UrlImagen:   "http://example.com/river.jpg",
+		Capacidad:   200,
+		Precio:      3500.00,
+	}
+	bodyUpdate, _ := json.Marshal(updateDTO)
+	req14, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyUpdate))
+	req14.Header.Set("Authorization", "Bearer "+adminToken)
+	req14.Header.Set("Content-Type", "application/json")
+
+	w14 := httptest.NewRecorder()
+	router.ServeHTTP(w14, req14)
+
+	if w14.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w14.Code, w14.Body.String())
+	}
+
+	// Verify update in DAO
+	if mockDAO.events[0].Titulo != "Concierto de Rock Recargado" || mockDAO.events[0].Capacidad != 200 {
+		t.Errorf("Expected title 'Concierto de Rock Recargado' and capacity 200, got '%s' and %d", mockDAO.events[0].Titulo, mockDAO.events[0].Capacidad)
+	}
+
+	// 15. Error: update event without admin token (e.g. client token)
+	req15, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyUpdate))
+	req15.Header.Set("Authorization", "Bearer "+clientToken)
+	req15.Header.Set("Content-Type", "application/json")
+
+	w15 := httptest.NewRecorder()
+	router.ServeHTTP(w15, req15)
+
+	if w15.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", w15.Code)
+	}
+
+	// 16. Error: update non-existent event
+	req16, _ := http.NewRequest("PUT", "/admin/events/999", bytes.NewBuffer(bodyUpdate))
+	req16.Header.Set("Authorization", "Bearer "+adminToken)
+	req16.Header.Set("Content-Type", "application/json")
+
+	w16 := httptest.NewRecorder()
+	router.ServeHTTP(w16, req16)
+
+	if w16.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d", w16.Code)
+	}
+
+	// 17. Error: update event with past date
+	pastDateStr := time.Now().Add(-48 * time.Hour).Format("2006-01-02")
+	updatePastDTO := updateDTO
+	updatePastDTO.Fecha = pastDateStr
+	bodyPastUpdate, _ := json.Marshal(updatePastDTO)
+	req17, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyPastUpdate))
+	req17.Header.Set("Authorization", "Bearer "+adminToken)
+	req17.Header.Set("Content-Type", "application/json")
+
+	w17 := httptest.NewRecorder()
+	router.ServeHTTP(w17, req17)
+
+	if w17.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w17.Code, w17.Body.String())
+	}
+
+	// 18. Error: update event capacity less than active sold tickets
+	// Inject 2 active tickets to event 1 in mockDAO
+	mockDAO.events[0].Tickets = []domain.Ticket{
+		{Estado: "activo"},
+		{Estado: "activo"},
+	}
+	updateLowCapDTO := updateDTO
+	updateLowCapDTO.Capacidad = 1 // Less than 2
+	bodyLowCapUpdate, _ := json.Marshal(updateLowCapDTO)
+	req18, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyLowCapUpdate))
+	req18.Header.Set("Authorization", "Bearer "+adminToken)
+	req18.Header.Set("Content-Type", "application/json")
+
+	w18 := httptest.NewRecorder()
+	router.ServeHTTP(w18, req18)
+
+	if w18.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w18.Code, w18.Body.String())
 	}
 }

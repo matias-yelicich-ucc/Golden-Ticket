@@ -53,6 +53,10 @@ function App() {
           path="/admin/create-event"
           element={<RequireAdmin><><AdminDashboard /><AdminCreateEvent /></></RequireAdmin>}
         />
+        <Route
+          path="/admin/eventos/:id/editar"
+          element={<RequireAdmin><><AdminDashboard /><AdminCreateEvent /></></RequireAdmin>}
+        />
         <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -9,6 +9,7 @@ type EventDAO interface {
 	Create(event *domain.Event) error
 	GetAll(categoria string, buscar string) ([]*domain.Event, error)
 	GetByID(id uint) (*domain.Event, error)
+	Update(event *domain.Event) error
 }
 
 type eventDAOImpl struct{}
@@ -43,5 +44,10 @@ func (d *eventDAOImpl) GetAll(categoria string, buscar string) ([]*domain.Event,
 func (d *eventDAOImpl) Create(event *domain.Event) error {
 	return DB.Create(event).Error
 }
+
+func (d *eventDAOImpl) Update(event *domain.Event) error {
+	return DB.Save(event).Error
+}
+
 
 

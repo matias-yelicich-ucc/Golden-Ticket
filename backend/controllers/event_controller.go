@@ -70,3 +70,32 @@ func (ctrl *EventController) GetByID(c *gin.Context) {
 
 	c.JSON(http.StatusOK, res)
 }
+
+// Update maneja el endpoint de actualización de un evento (PUT /admin/events/:id)
+func (ctrl *EventController) Update(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		return
+	}
+
+	var dto domain.EventCreateDTO
+	if err := c.ShouldBindJSON(&dto); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	res, err := ctrl.eventService.UpdateEvent(uint(id), dto)
+	if err != nil {
+		status := http.StatusUnprocessableEntity
+		if err.Error() == "evento no encontrado" {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+

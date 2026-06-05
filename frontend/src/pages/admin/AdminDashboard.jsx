@@ -175,9 +175,9 @@ function AdminDashboard() {
                     <button type="button" aria-label={`Ver metricas de ${event.titulo}`}>
                       <BarsIcon />
                     </button>
-                    <button type="button" aria-label={`Editar ${event.titulo}`}>
+                    <Link to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
                       <PencilIcon />
-                    </button>
+                    </Link>
                     <button type="button" aria-label={`Eliminar ${event.titulo}`}>
                       <TrashIcon />
                     </button>

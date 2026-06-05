@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import '../../styles/App.css';
 import { adminCategories } from '../../constants/admin';
-import { createEvent } from '../../services/api/client';
+import { createEvent, updateEvent, getEventByID } from '../../services/api/client';
 
 const ImageIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -73,10 +73,37 @@ const createInitialForm = () => ({
 });
 
 function AdminCreateEvent() {
+  const { id } = useParams();
   const [form, setForm] = useState(createInitialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (id) {
+      getEventByID(id)
+        .then((response) => {
+          const ev = response.data;
+          setForm({
+            title: ev.titulo || '',
+            description: ev.descripcion || '',
+            category: ev.categoria || '',
+            eventDate: ev.fecha || '',
+            startTime: ev.hora_inicio || '',
+            endTime: ev.hora_fin || '',
+            capacity: ev.capacidad ? ev.capacidad.toString() : '',
+            price: ev.precio !== undefined ? ev.precio.toString() : '',
+            location: ev.ubicacion || '',
+            coordinates: ev.coordenadas || '',
+            imageUrl: ev.url_imagen || '',
+          });
+        })
+        .catch((err) => {
+          console.error('Error fetching event details:', err);
+          setFeedback('Error al cargar los datos del evento.');
+        });
+    }
+  }, [id]);
 
   const handleChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -121,8 +148,13 @@ function AdminCreateEvent() {
         precio: parseFloat(form.price),
       };
 
-      await createEvent(payload);
-      setFeedback('¡Evento creado con éxito en el servidor!');
+      if (id) {
+        await updateEvent(id, payload);
+        setFeedback('¡Evento actualizado con éxito en el servidor!');
+      } else {
+        await createEvent(payload);
+        setFeedback('¡Evento creado con éxito en el servidor!');
+      }
       
       setTimeout(() => {
         navigate('/admin');
@@ -141,9 +173,9 @@ function AdminCreateEvent() {
         <form className="admin-form-card admin-dialog-card" onSubmit={handleSubmit}>
           <div className="admin-dialog-header">
             <div>
-              <span className="admin-kicker">Crear nuevo evento</span>
-              <h1>Completa la ficha del evento</h1>
-              <p>Dialogo frontend para modelar la entidad de eventos y dejar lista la integracion futura del backend.</p>
+              <span className="admin-kicker">{id ? 'Editar evento' : 'Crear nuevo evento'}</span>
+              <h1>{id ? 'Actualiza los datos del evento' : 'Completa la ficha del evento'}</h1>
+              <p>{id ? 'Modifica los atributos necesarios del evento seleccionado.' : 'Dialogo frontend para modelar la entidad de eventos y dejar lista la integracion futura del backend.'}</p>
             </div>
 
             <button type="button" className="admin-dialog-close" onClick={() => navigate('/admin/dashboard')} aria-label="Cerrar dialogo">
@@ -321,7 +353,7 @@ function AdminCreateEvent() {
 
           <div className="admin-form-footer">
             <button type="button" className="admin-ghost-button" onClick={() => navigate('/admin/dashboard')}>Cancelar</button>
-            <button type="submit" className="admin-submit-button">Guardar evento</button>
+            <button type="submit" className="admin-submit-button">{id ? 'Guardar cambios' : 'Publicar evento'}</button>
           </div>
 
           {feedback && <p className="purchase-note success-state admin-inline-feedback">{feedback}</p>}
