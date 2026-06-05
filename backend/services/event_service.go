@@ -12,7 +12,7 @@ import (
 // EventService define la lógica de negocio para la gestión de eventos
 type EventService interface {
 	CreateEvent(dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
-	GetAllEvents() ([]*domain.EventResponseDTO, error)
+	GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error)
 }
 
 type eventServiceImpl struct {
@@ -76,9 +76,9 @@ func (s *eventServiceImpl) CreateEvent(dto domain.EventCreateDTO) (*domain.Event
 	return &response, nil
 }
 
-// GetAllEvents obtiene todos los eventos y los mapea a EventResponseDTO
-func (s *eventServiceImpl) GetAllEvents() ([]*domain.EventResponseDTO, error) {
-	events, err := s.eventDAO.GetAll()
+// GetAllEvents obtiene todos los eventos filtrados y los mapea a EventResponseDTO
+func (s *eventServiceImpl) GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error) {
+	events, err := s.eventDAO.GetAll(categoria, buscar)
 	if err != nil {
 		return nil, err
 	}
