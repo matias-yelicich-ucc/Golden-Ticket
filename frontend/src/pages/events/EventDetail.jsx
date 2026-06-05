@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
-import { getEventByID } from '../../services/api/client';
+import { getEventByID, buyTickets } from '../../services/api/client';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -86,8 +86,11 @@ const normalizeEvent = (dbEvent) => {
 
 function EventDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
-  const [feedback, setFeedback] = useState('');
+  const [purchasing, setPurchasing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -143,7 +146,32 @@ function EventDetail() {
   const total = event.numericPrice * quantity;
 
   const handlePurchase = () => {
-    setFeedback('La pantalla de compra ya esta lista en frontend. La integracion de tickets queda pendiente del backend de eventos.');
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    setPurchasing(true);
+    setSuccessMessage('');
+    setErrorMessage('');
+
+    buyTickets(event.id, { cantidad: quantity })
+      .then(() => {
+        setSuccessMessage(`¡Compra exitosa! Adquiriste ${quantity} entrada(s).`);
+        setEvent((prev) => ({
+          ...prev,
+          entradas_disponibles: Math.max(0, prev.entradas_disponibles - quantity),
+          soldOut: prev.entradas_disponibles - quantity <= 0,
+        }));
+      })
+      .catch((err) => {
+        console.error('Error buying tickets:', err);
+        const backendError = err.response?.data?.error || 'No se pudo completar la compra.';
+        setErrorMessage(backendError);
+      })
+      .finally(() => {
+        setPurchasing(false);
+      });
   };
 
   return (
@@ -253,11 +281,17 @@ function EventDetail() {
                 <strong>{formatCurrency(total)}</strong>
               </div>
 
-              <button className="purchase-button" type="button" onClick={handlePurchase}>
-                Comprar entrada
+              <button 
+                className="purchase-button" 
+                type="button" 
+                onClick={handlePurchase}
+                disabled={purchasing || event.soldOut}
+              >
+                {purchasing ? 'Procesando...' : event.soldOut ? 'Agotado' : 'Comprar entrada'}
               </button>
 
-              {feedback && <p className="purchase-note">{feedback}</p>}
+              {successMessage && <p className="purchase-note" style={{ color: '#22c55e', marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{successMessage}</p>}
+              {errorMessage && <p className="purchase-note" style={{ color: '#ef4444', marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{errorMessage}</p>}
             </section>
           </aside>
         </section>
