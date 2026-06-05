@@ -67,3 +67,25 @@ func (ctrl *TicketController) Buy(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, tickets)
 }
+
+// GetMyTickets obtiene todos los tickets del usuario logueado (GET /my-tickets)
+func (ctrl *TicketController) GetMyTickets(c *gin.Context) {
+	userIDVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Usuario no autenticado"})
+		return
+	}
+	userID, ok := userIDVal.(uint)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "ID de usuario inválido en el contexto"})
+		return
+	}
+
+	tickets, err := ctrl.ticketService.GetTicketsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, tickets)
+}

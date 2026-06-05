@@ -13,6 +13,7 @@ import (
 
 type TicketDAO interface {
 	BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error)
+	GetByUserID(userID uint) ([]domain.Ticket, error)
 }
 
 type ticketDAOImpl struct{}
@@ -67,5 +68,11 @@ func (d *ticketDAOImpl) BuyTickets(userID uint, eventID uint, cantidad int) ([]d
 		return nil
 	})
 
+	return tickets, err
+}
+
+func (d *ticketDAOImpl) GetByUserID(userID uint) ([]domain.Ticket, error) {
+	var tickets []domain.Ticket
+	err := DB.Preload("Event").Where("user_id = ?", userID).Find(&tickets).Error
 	return tickets, err
 }

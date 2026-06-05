@@ -7,6 +7,7 @@ import (
 
 type TicketService interface {
 	BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error)
+	GetTicketsByUserID(userID uint) ([]domain.Ticket, error)
 }
 
 type ticketServiceImpl struct {
@@ -21,4 +22,8 @@ func NewTicketService(ticketDAO dao.TicketDAO) TicketService {
 
 func (s *ticketServiceImpl) BuyTickets(userID uint, eventID uint, cantidad int) ([]domain.Ticket, error) {
 	return s.ticketDAO.BuyTickets(userID, eventID, cantidad)
+}
+
+func (s *ticketServiceImpl) GetTicketsByUserID(userID uint) ([]domain.Ticket, error) {
+	return s.ticketDAO.GetByUserID(userID)
 }

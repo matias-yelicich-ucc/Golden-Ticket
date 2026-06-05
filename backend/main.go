@@ -75,6 +75,7 @@ func main() {
 		})
 
 		protected.POST("/events/:id/tickets", ticketController.Buy)
+		protected.GET("/my-tickets", ticketController.GetMyTickets)
 
 		// Admin-only test route
 		adminOnly := protected.Group("/admin")

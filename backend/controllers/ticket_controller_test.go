@@ -66,6 +66,19 @@ func (m *mockTicketDAO) BuyTickets(userID uint, eventID uint, cantidad int) ([]d
 	return newTickets, nil
 }
 
+func (m *mockTicketDAO) GetByUserID(userID uint) ([]domain.Ticket, error) {
+	var res []domain.Ticket
+	for _, t := range m.tickets {
+		if t.UserID == userID {
+			if ev, exists := m.events[t.EventID]; exists {
+				t.Event = ev
+			}
+			res = append(res, t)
+		}
+	}
+	return res, nil
+}
+
 func TestTicketController(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	os.Setenv("JWT_SECRET", "test_secret_for_ticket_controller")
@@ -103,6 +116,7 @@ func TestTicketController(t *testing.T) {
 	protected.Use(middleware.AuthMiddleware())
 	{
 		protected.POST("/events/:id/tickets", ctrl.Buy)
+		protected.GET("/my-tickets", ctrl.GetMyTickets)
 	}
 
 	// Helper to generate a valid client token
@@ -183,5 +197,52 @@ func TestTicketController(t *testing.T) {
 
 	if w5.Code != http.StatusNotFound {
 		t.Errorf("Expected 404 Not Found, got %d. Body: %s", w5.Code, w5.Body.String())
+	}
+
+	// 6. Success: get tickets of current user (clientToken belongs to userID 2)
+	req6, _ := http.NewRequest("GET", "/my-tickets", nil)
+	req6.Header.Set("Authorization", "Bearer "+clientToken)
+
+	w6 := httptest.NewRecorder()
+	router.ServeHTTP(w6, req6)
+
+	if w6.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", w6.Code, w6.Body.String())
+	}
+
+	var myTickets []domain.Ticket
+	_ = json.Unmarshal(w6.Body.Bytes(), &myTickets)
+	if len(myTickets) != 2 {
+		t.Errorf("Expected 2 tickets, got %d", len(myTickets))
+	}
+	if myTickets[0].Event == nil || myTickets[0].Event.Titulo != "Concierto de Rock" {
+		t.Errorf("Expected Event details populated in ticket")
+	}
+
+	// 7. Success: get tickets for a user with no tickets (userID 99)
+	otherToken, _ := utils.GenerateToken(99, "cliente")
+	req7, _ := http.NewRequest("GET", "/my-tickets", nil)
+	req7.Header.Set("Authorization", "Bearer "+otherToken)
+
+	w7 := httptest.NewRecorder()
+	router.ServeHTTP(w7, req7)
+
+	if w7.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", w7.Code)
+	}
+
+	var otherTickets []domain.Ticket
+	_ = json.Unmarshal(w7.Body.Bytes(), &otherTickets)
+	if len(otherTickets) != 0 {
+		t.Errorf("Expected 0 tickets, got %d", len(otherTickets))
+	}
+
+	// 8. Error: get tickets unauthorized (missing token)
+	req8, _ := http.NewRequest("GET", "/my-tickets", nil)
+	w8 := httptest.NewRecorder()
+	router.ServeHTTP(w8, req8)
+
+	if w8.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", w8.Code)
 	}
 }
