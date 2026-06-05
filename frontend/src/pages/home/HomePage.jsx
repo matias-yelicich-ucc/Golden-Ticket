@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
 import { getEvents } from '../../services/api/client';
@@ -26,13 +26,6 @@ const CalendarIcon = () => (
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="m7 10 5 5 5-5" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M18 21v-2a6 6 0 0 0-12 0v2" />
-    <circle cx="12" cy="8" r="4" />
   </svg>
 );
 
@@ -83,8 +76,8 @@ const normalizeEvent = (dbEvent) => {
     id: dbEvent.id,
     slug: slugify(dbEvent.titulo, dbEvent.id),
     title: dbEvent.titulo,
-    description: [dbEvent.descripcion || 'Sin descripción.'],
-    category: dbEvent.categoria || 'Música',
+    description: [dbEvent.descripcion || 'Sin descripciÃ³n.'],
+    category: dbEvent.categoria || 'MÃºsica',
     date: dbEvent.fecha,
     fullDate: dbEvent.fecha,
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
@@ -157,21 +150,23 @@ function HelloWorld() {
 
   // Fetch full categories list and initial events once
   useEffect(() => {
-    setLoading(true);
-    getEvents()
-      .then((response) => {
+    const loadEvents = async () => {
+      setLoading(true);
+      try {
+        const response = await getEvents();
         const normalized = (response.data || []).map(normalizeEvent);
         setEvents(normalized);
         const dynamicCategories = Array.from(new Set(normalized.map((event) => event.category)));
         setAllCategories(['Todos', ...dynamicCategories]);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Error fetching events:', err);
         setError('No se pudieron cargar los eventos del servidor.');
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    void loadEvents();
   }, []);
 
   const fetchFilteredEvents = (cat, searchVal) => {
@@ -374,3 +369,4 @@ function HelloWorld() {
 }
 
 export default HelloWorld;
+
