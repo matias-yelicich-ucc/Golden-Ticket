@@ -61,8 +61,8 @@ const normalizeEvent = (dbEvent) => {
     slug: slugify(dbEvent.titulo, dbEvent.id),
     title: dbEvent.titulo,
     subtitle: dbEvent.descripcion || 'Detalles del evento.',
-    description: [dbEvent.descripcion || 'Sin descripciÃ³n.'],
-    category: dbEvent.categoria || 'MÃºsica',
+    description: [dbEvent.descripcion || 'Sin descripción.'],
+    category: dbEvent.categoria || 'Música',
     date: dbEvent.fecha,
     fullDate: dbEvent.fecha,
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
@@ -121,6 +121,7 @@ function EventDetail() {
 
     void loadEvent();
   }, [slug]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [slug]);
@@ -158,7 +159,7 @@ function EventDetail() {
         setModal({
           isOpen: true,
           type: 'success',
-          title: 'Â¡Compra Exitosa!',
+          title: '¡Compra Exitosa!',
           message: `Adquiriste ${quantity} entrada(s) para "${event.title}".`
         });
         setEvent((prev) => ({
@@ -188,7 +189,7 @@ function EventDetail() {
         <Link className="event-detail-brand" to="/">Golden Ticket</Link>
         <nav className="event-detail-nav">
           <Link to="/">Eventos</Link>
-          {isAuthenticated ? <Link to="/mis-entradas">Mis entradas</Link> : <Link to="/login">Iniciar sesion</Link>}
+          {isAuthenticated ? <Link to="/mis-entradas">Mis entradas</Link> : <Link to="/login">Iniciar sesión</Link>}
         </nav>
       </header>
 
@@ -228,7 +229,7 @@ function EventDetail() {
                   <PinIcon />
                 </div>
                 <div>
-                  <span>Ubicacion</span>
+                  <span>Ubicación</span>
                   <strong>{event.location}</strong>
                   <p>{event.address}</p>
                 </div>
@@ -238,25 +239,37 @@ function EventDetail() {
             <section className="event-detail-copy">
               <h2>Sobre este evento</h2>
               {event.description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-              <p>Este evento forma parte del catalogo cliente definido por la consigna y permite completar el flujo de consulta, detalle y compra.</p>
+              <p>Este evento forma parte del catálogo cliente definido por la consigna y permite completar el flujo de consulta, detalle y compra.</p>
             </section>
 
             <section className="event-detail-capacity">
-              <h2>Capacidad y disponibilidad</h2>
+              <h2>Ubicación y disponibilidad</h2>
               <div className="event-detail-capacity-row">
                 <UsersIcon />
-                <span>{event.capacity}</span>
+                <span>Capacidad: {event.capacity} personas</span>
               </div>
-              <div className="event-detail-map">
-                <div className="event-detail-map-grid" />
-                <div className="event-detail-map-park" />
-                <div className="event-detail-map-marker marker-one">
-                  <PinIcon />
-                </div>
-                <div className="event-detail-map-marker marker-two">
-                  <PinIcon />
-                </div>
-                <div className="event-detail-map-label">{event.location}</div>
+              
+              {/* Aquí está el nuevo Iframe de Google Maps */}
+              <div 
+                className="event-detail-map" 
+                style={{ 
+                  marginTop: '1.5rem', 
+                  borderRadius: '12px', 
+                  overflow: 'hidden', 
+                  height: '300px', 
+                  backgroundColor: '#eaeaea' 
+                }}
+              >
+                <iframe
+                  title={`Mapa de ubicación de ${event.location}`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                ></iframe>
               </div>
             </section>
           </div>
@@ -335,6 +348,3 @@ function EventDetail() {
 }
 
 export default EventDetail;
-
-
-
