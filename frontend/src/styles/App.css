@@ -1824,3 +1824,106 @@
     width: 100%;
   }
 }
+
+/* Purchase Modal Styles */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  background: #121212;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 16px;
+  padding: 32px;
+  width: min(450px, 90%);
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-icon-wrap.success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.modal-icon-wrap.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.modal-icon-wrap svg {
+  width: 36px;
+  height: 36px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  margin: 0 0 12px;
+  font-weight: 700;
+}
+
+.modal-content h3.success {
+  color: #22c55e;
+}
+
+.modal-content h3.error {
+  color: #ef4444;
+}
+
+.modal-content p {
+  color: #a3a3a3;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+
+.modal-button {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+  color: #000;
+  border: 0;
+  border-radius: 8px;
+  padding: 14px 28px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.modal-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}

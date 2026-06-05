@@ -89,8 +89,7 @@ function EventDetail() {
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
   const [purchasing, setPurchasing] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
+  const [modal, setModal] = useState({ isOpen: false, type: '', title: '', message: '' });
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -152,12 +151,15 @@ function EventDetail() {
     }
 
     setPurchasing(true);
-    setSuccessMessage('');
-    setErrorMessage('');
 
     buyTickets(event.id, { cantidad: quantity })
       .then(() => {
-        setSuccessMessage(`¡Compra exitosa! Adquiriste ${quantity} entrada(s).`);
+        setModal({
+          isOpen: true,
+          type: 'success',
+          title: '¡Compra Exitosa!',
+          message: `Adquiriste ${quantity} entrada(s) para "${event.title}".`
+        });
         setEvent((prev) => ({
           ...prev,
           entradas_disponibles: Math.max(0, prev.entradas_disponibles - quantity),
@@ -167,7 +169,12 @@ function EventDetail() {
       .catch((err) => {
         console.error('Error buying tickets:', err);
         const backendError = err.response?.data?.error || 'No se pudo completar la compra.';
-        setErrorMessage(backendError);
+        setModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Error en la Compra',
+          message: backendError
+        });
       })
       .finally(() => {
         setPurchasing(false);
@@ -290,12 +297,38 @@ function EventDetail() {
                 {purchasing ? 'Procesando...' : event.soldOut ? 'Agotado' : 'Comprar entrada'}
               </button>
 
-              {successMessage && <p className="purchase-note" style={{ color: '#22c55e', marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{successMessage}</p>}
-              {errorMessage && <p className="purchase-note" style={{ color: '#ef4444', marginTop: '1rem', textAlign: 'center', fontWeight: 'bold' }}>{errorMessage}</p>}
             </section>
           </aside>
         </section>
       </>
+
+      {modal.isOpen && (
+        <div className="modal-overlay" onClick={() => setModal({ ...modal, isOpen: false })}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className={`modal-icon-wrap ${modal.type}`}>
+              {modal.type === 'success' ? (
+                <svg viewBox="0 0 24 24" style={{ width: '36px', height: '36px', stroke: 'currentColor', strokeWidth: '2.5', fill: 'none' }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" style={{ width: '36px', height: '36px', stroke: 'currentColor', strokeWidth: '2.5', fill: 'none' }}>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              )}
+            </div>
+            <h3 className={modal.type}>{modal.title}</h3>
+            <p>{modal.message}</p>
+            <button 
+              type="button" 
+              className="modal-button" 
+              onClick={() => setModal({ ...modal, isOpen: false })}
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
