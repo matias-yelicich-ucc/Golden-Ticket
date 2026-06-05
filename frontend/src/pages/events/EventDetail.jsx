@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import '../../styles/App.css';
-import { getEvents } from '../../services/api/client';
+import { getEventByID } from '../../services/api/client';
 
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -94,16 +94,24 @@ function EventDetail() {
   const isAuthenticated = Boolean(localStorage.getItem('token'));
 
   useEffect(() => {
-    getEvents()
+    const eventId = slug.split('-').pop();
+    if (!eventId || isNaN(Number(eventId))) {
+      setError('ID de evento inválido.');
+      setLoading(false);
+      return;
+    }
+
+    getEventByID(eventId)
       .then((response) => {
-        const dbEvents = response.data || [];
-        const normalized = dbEvents.map(normalizeEvent);
-        const matched = normalized.find((e) => e.slug === slug);
-        setEvent(matched || null);
+        if (response.data) {
+          setEvent(normalizeEvent(response.data));
+        } else {
+          setEvent(null);
+        }
       })
       .catch((err) => {
         console.error('Error fetching event detail:', err);
-        setError('No se pudo conectar con el servidor.');
+        setError('No se pudo conectar con el servidor o el evento no existe.');
       })
       .finally(() => {
         setLoading(false);

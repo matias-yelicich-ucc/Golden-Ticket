@@ -18,3 +18,4 @@ export const loginUser = (payload) => api.post('/login', payload);
 export const registerUser = (payload) => api.post('/register', payload);
 export const createEvent = (payload) => api.post('/admin/events', payload);
 export const getEvents = (params) => api.get('/events', { params });
+export const getEventByID = (id) => api.get(`/events/${id}`);
