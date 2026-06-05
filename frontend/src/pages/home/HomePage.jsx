@@ -10,13 +10,6 @@ const SearchIcon = () => (
   </svg>
 );
 
-const PinIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M12 21s7-6.1 7-12a7 7 0 0 0-14 0c0 5.9 7 12 7 12Z" />
-    <circle cx="12" cy="9" r="2.3" />
-  </svg>
-);
-
 const CalendarIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M7 3v4M17 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
@@ -120,7 +113,10 @@ const EventCard = ({ event }) => (
         </div>
         <h3>{event.title}</h3>
         <div className="event-location">
-          <PinIcon />
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 21s7-6.1 7-12a7 7 0 0 0-14 0c0 5.9 7 12 7 12Z" />
+            <circle cx="12" cy="9" r="2.3" />
+          </svg>
           {event.location}
         </div>
         <div className="event-divider" />
@@ -266,10 +262,10 @@ function HelloWorld() {
   return (
     <main className="home-screen">
       <header className="event-detail-topbar">
-        <Link className="event-detail-brand" to="/">Golden Ticket</Link>
-        <nav className="event-detail-nav">
-          <Link to="/">Eventos</Link>
-        </nav>
+        <Link className="event-detail-brand" to="/">
+          <img src="/images/foreground_logo_golden_ticket.png" alt="Golden Ticket" />
+          <span>Golden Ticket</span>
+        </Link>
         <div className="event-detail-actions">
           {isAuthenticated ? (
             <div className="topbar-profile" ref={profileMenuRef}>
@@ -321,35 +317,27 @@ function HelloWorld() {
 
       <section className="home-hero">
         <div className="hero-content">
-          <h1>Encontra los mejores eventos cerca tuyo</h1>
+          <h1>Vivi grandes eventos</h1>
           <p>Descubri conciertos, charlas y espectaculos. Busca, filtra y compra tus entradas desde un solo lugar.</p>
           <form className="hero-search" onSubmit={handleSearchSubmit}>
             <label className="search-field">
               <SearchIcon />
               <input type="search" placeholder="Que queres ver?" value={search} onChange={handleSearchChange} />
             </label>
-            <button className="location-field" type="button">
-              <PinIcon />
-              <span>Ciudad de Cordoba</span>
-              <ChevronIcon />
-            </button>
             <button className="search-button" type="submit">Buscar</button>
           </form>
         </div>
       </section>
 
-      <section className="filters-bar" aria-label="Filtros de eventos">
-        <div className="category-filters">
+      <section className="events-section">
+        <h2>Catalogo de eventos</h2>
+        <div className="category-filters events-category-filters" aria-label="Filtros de eventos">
           {allCategories.map((item) => (
             <button className={item === category ? 'active' : ''} key={item} type="button" onClick={() => handleCategoryChange(item)}>
               {item}
             </button>
           ))}
         </div>
-      </section>
-
-      <section className="events-section">
-        <h2>Catalogo de eventos</h2>
         {loading ? (
           <p className="empty-state">Cargando eventos...</p>
         ) : error ? (
