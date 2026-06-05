@@ -20,3 +20,4 @@ export const createEvent = (payload) => api.post('/admin/events', payload);
 export const getEvents = (params) => api.get('/events', { params });
 export const getEventByID = (id) => api.get(`/events/${id}`);
 export const buyTickets = (eventID, payload) => api.post(`/events/${eventID}/tickets`, payload);
+export const getMyTickets = () => api.get('/my-tickets');
