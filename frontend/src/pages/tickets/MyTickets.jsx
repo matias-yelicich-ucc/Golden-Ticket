@@ -53,6 +53,13 @@ const PlusIcon = () => (
   </svg>
 );
 
+const ArrowLeftIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
+    <path d="M19 12H5" />
+    <path d="m12 19-7-7 7-7" />
+  </svg>
+);
+
 function MyTickets() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
@@ -146,11 +153,17 @@ function MyTickets() {
   return (
     <main className="home-screen">
       <header className="event-detail-topbar">
-        <Link className="event-detail-brand" to="/">Golden Ticket</Link>
-        <nav className="event-detail-nav">
-          <Link to="/">Eventos</Link>
-          <Link to="/mis-entradas" className="is-active">Mis entradas</Link>
-        </nav>
+        <div className="topbar-title-group">
+          <button
+            type="button"
+            className="topbar-back-button"
+            onClick={() => navigate(-1)}
+            aria-label="Volver"
+          >
+            <ArrowLeftIcon />
+          </button>
+          <h1 className="topbar-page-title">Mis entradas</h1>
+        </div>
         <div className="event-detail-actions">
           {isAuthenticated ? (
             <div className="topbar-profile" ref={profileMenuRef}>
@@ -201,8 +214,6 @@ function MyTickets() {
       </header>
 
       <section className="events-section" style={{ padding: '40px 24px', maxWidth: '1100px', margin: '0 auto' }}>
-        <h2 style={{ fontSize: '2.2rem', marginBottom: '24px', color: '#fff' }}>Mis entradas</h2>
-
         {loading ? (
           <p className="empty-state">Cargando tus entradas...</p>
         ) : error ? (

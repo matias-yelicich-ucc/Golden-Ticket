@@ -554,6 +554,33 @@
   flex: 0 0 auto;
 }
 
+.topbar-title-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.topbar-back-button {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 175, 55, 0.26);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #f6df9c;
+  cursor: pointer;
+}
+
+.topbar-page-title {
+  margin: 0;
+  color: #f6f2e9;
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .event-detail-nav,
 .event-detail-actions {
   display: flex;
