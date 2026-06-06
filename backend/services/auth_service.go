@@ -7,11 +7,15 @@ import (
 	"golden-ticket/backend/dao"
 	"golden-ticket/backend/domain"
 	"golden-ticket/backend/utils"
+
+	mysqlDriver "github.com/go-sql-driver/mysql"
 )
 
 var (
 	// ErrUserAlreadyExists is returned when trying to register an email that is already taken
 	ErrUserAlreadyExists = errors.New("user already exists")
+	// ErrDNIAlreadyExists is returned when trying to register a DNI that is already taken
+	ErrDNIAlreadyExists = errors.New("dni already exists")
 	// ErrInvalidCredentials is returned on login failure
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
@@ -36,11 +40,17 @@ func NewAuthService(userDAO dao.UserDAO) AuthService {
 // Register registers a new user if the email is not taken
 func (s *authServiceImpl) Register(dto domain.UserRegisterDTO) (*domain.UserResponseDTO, error) {
 	emailNormalized := strings.ToLower(strings.TrimSpace(dto.Email))
+	dniNormalized := strings.TrimSpace(dto.DNI)
 
 	// Check if user already exists
 	existingUser, _ := s.userDAO.GetByEmail(emailNormalized)
 	if existingUser != nil {
 		return nil, ErrUserAlreadyExists
+	}
+
+	existingUserByDNI, _ := s.userDAO.GetByDNI(dniNormalized)
+	if existingUserByDNI != nil {
+		return nil, ErrDNIAlreadyExists
 	}
 
 	hashedPassword, err := utils.HashPassword(dto.Password)
@@ -59,9 +69,20 @@ func (s *authServiceImpl) Register(dto domain.UserRegisterDTO) (*domain.UserResp
 		Email:    emailNormalized,
 		Password: hashedPassword,
 		Rol:      role,
+		DNI:      dniNormalized,
 	}
 
 	if err := s.userDAO.Create(&user); err != nil {
+		var mysqlErr *mysqlDriver.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
+			duplicateMessage := strings.ToLower(mysqlErr.Message)
+			switch {
+			case strings.Contains(duplicateMessage, "dni"):
+				return nil, ErrDNIAlreadyExists
+			case strings.Contains(duplicateMessage, "email"):
+				return nil, ErrUserAlreadyExists
+			}
+		}
 		return nil, err
 	}
 
@@ -71,6 +92,7 @@ func (s *authServiceImpl) Register(dto domain.UserRegisterDTO) (*domain.UserResp
 		Apellido: user.Apellido,
 		Email:    user.Email,
 		Rol:      user.Rol,
+		DNI:      user.DNI,
 	}
 
 	return &response, nil
@@ -101,6 +123,7 @@ func (s *authServiceImpl) Login(dto domain.UserLoginDTO) (*domain.LoginResponseD
 			Apellido: user.Apellido,
 			Email:    user.Email,
 			Rol:      user.Rol,
+			DNI:      user.DNI,
 		},
 		Token: token,
 	}

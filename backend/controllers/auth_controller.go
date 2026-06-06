@@ -35,6 +35,10 @@ func (ctrl *AuthController) Register(c *gin.Context) {
 			c.JSON(http.StatusConflict, gin.H{"error": "El email ingresado ya se encuentra registrado"})
 			return
 		}
+		if err == services.ErrDNIAlreadyExists {
+			c.JSON(http.StatusConflict, gin.H{"error": "El DNI ingresado ya se encuentra registrado"})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error interno del servidor"})
 		return
 	}

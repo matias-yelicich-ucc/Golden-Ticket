@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/App.css';
 import { events } from '../constants/events';
@@ -26,13 +26,6 @@ const CalendarIcon = () => (
 const ChevronIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="m7 10 5 5 5-5" />
-  </svg>
-);
-
-const UserIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M18 21v-2a6 6 0 0 0-12 0v2" />
-    <circle cx="12" cy="8" r="4" />
   </svg>
 );
 
@@ -128,7 +121,7 @@ function HelloWorld() {
       .join('');
   }, [currentUser]);
 
-  const isAdmin = currentUser?.rol === 'admin';
+  const isAdmin = ['admin', 'administrador'].includes(currentUser?.rol);
 
   const categories = useMemo(() => {
     const dynamicCategories = Array.from(new Set(events.map((event) => event.category)));
@@ -273,3 +266,4 @@ function HelloWorld() {
 }
 
 export default HelloWorld;
+

@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import '../styles/App.css';
-import { adminCategories } from '../constants/admin';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import '../../styles/App.css';
+import { adminCategories } from '../../constants/admin';
+import { createEvent, updateEvent, getEventByID } from '../../services/api/client';
 
 const ImageIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -57,6 +58,12 @@ const CloseIcon = () => (
   </svg>
 );
 
+const ChevronIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m7 10 5 5 5-5" />
+  </svg>
+);
+
 const createInitialForm = () => ({
   title: '',
   description: '',
@@ -65,18 +72,115 @@ const createInitialForm = () => ({
   startTime: '',
   endTime: '',
   capacity: '',
+  price: '',
   location: '',
   coordinates: '',
   imageUrl: '',
 });
 
+const MAX_CAPACITY_DIGITS = 7;
+
 function AdminCreateEvent() {
+  const { id } = useParams();
   const [form, setForm] = useState(createInitialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState('');
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const categoryMenuRef = useRef(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const { body, documentElement } = document;
+    const scrollY = window.scrollY;
+    const previousBodyStyle = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      left: body.style.left,
+      right: body.style.right,
+    };
+    const previousHtmlOverflow = documentElement.style.overflow;
+
+    documentElement.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+
+    return () => {
+      documentElement.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyStyle.overflow;
+      body.style.position = previousBodyStyle.position;
+      body.style.top = previousBodyStyle.top;
+      body.style.width = previousBodyStyle.width;
+      body.style.left = previousBodyStyle.left;
+      body.style.right = previousBodyStyle.right;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (id) {
+      getEventByID(id)
+        .then((response) => {
+          const ev = response.data;
+          setForm({
+            title: ev.titulo || '',
+            description: ev.descripcion || '',
+            category: ev.categoria || '',
+            eventDate: ev.fecha || '',
+            startTime: ev.hora_inicio || '',
+            endTime: ev.hora_fin || '',
+            capacity: ev.capacidad ? ev.capacidad.toString() : '',
+            price: ev.precio !== undefined ? ev.precio.toString() : '',
+            location: ev.ubicacion || '',
+            coordinates: ev.coordenadas || '',
+            imageUrl: ev.url_imagen || '',
+          });
+        })
+        .catch((err) => {
+          console.error('Error fetching event details:', err);
+          setFeedback('Error al cargar los datos del evento.');
+        });
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!isCategoryOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!categoryMenuRef.current?.contains(event.target)) {
+        setIsCategoryOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsCategoryOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isCategoryOpen]);
+
   const handleChange = (field, value) => {
+    if (field === 'capacity') {
+      const sanitized = value.replace(/\D/g, '').slice(0, MAX_CAPACITY_DIGITS);
+      setForm((current) => ({ ...current, [field]: sanitized }));
+      setErrors((current) => ({ ...current, [field]: '' }));
+      setFeedback('');
+      return;
+    }
+
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: '' }));
     setFeedback('');
@@ -94,14 +198,48 @@ function AdminCreateEvent() {
     if (!form.location.trim()) nextErrors.location = 'La ubicacion es obligatoria.';
     if (!form.coordinates.trim()) nextErrors.coordinates = 'Las coordenadas son obligatorias.';
     if (!form.capacity.trim()) nextErrors.capacity = 'La capacidad es obligatoria.';
+    else if (!/^\d+$/.test(form.capacity)) nextErrors.capacity = 'La capacidad debe contener solo numeros.';
+    else if (form.capacity.length > MAX_CAPACITY_DIGITS) nextErrors.capacity = `La capacidad no puede superar los ${MAX_CAPACITY_DIGITS} digitos.`;
+    if (!form.price.trim()) nextErrors.price = 'El precio es obligatorio.';
+    else if (isNaN(form.price) || parseFloat(form.price) < 0) nextErrors.price = 'El precio debe ser un número mayor o igual a 0.';
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!validate()) return;
-    setFeedback('Frontend listo: este formulario quedo preparado para conectar luego con el backend de eventos.');
+
+    try {
+      const payload = {
+        titulo: form.title,
+        descripcion: form.description,
+        categoria: form.category,
+        fecha: form.eventDate,
+        hora_inicio: form.startTime,
+        hora_fin: form.endTime,
+        ubicacion: form.location,
+        coordenadas: form.coordinates,
+        url_imagen: form.imageUrl,
+        capacidad: parseInt(form.capacity, 10),
+        precio: parseFloat(form.price),
+      };
+
+      if (id) {
+        await updateEvent(id, payload);
+        setFeedback('¡Evento actualizado con éxito en el servidor!');
+      } else {
+        await createEvent(payload);
+        setFeedback('¡Evento creado con éxito en el servidor!');
+      }
+      
+      setTimeout(() => {
+        navigate('/admin');
+      }, 1500);
+    } catch (error) {
+      const errorMsg = error.response?.data?.error || 'Error al conectar con el servidor';
+      setFeedback(`Error: ${errorMsg}`);
+    }
   };
 
   return (
@@ -111,11 +249,7 @@ function AdminCreateEvent() {
 
         <form className="admin-form-card admin-dialog-card" onSubmit={handleSubmit}>
           <div className="admin-dialog-header">
-            <div>
-              <span className="admin-kicker">Crear nuevo evento</span>
-              <h1>Completa la ficha del evento</h1>
-              <p>Dialogo frontend para modelar la entidad de eventos y dejar lista la integracion futura del backend.</p>
-            </div>
+            <h1>{id ? 'Editar evento' : 'Crear evento'}</h1>
 
             <button type="button" className="admin-dialog-close" onClick={() => navigate('/admin/dashboard')} aria-label="Cerrar dialogo">
               <CloseIcon />
@@ -147,19 +281,38 @@ function AdminCreateEvent() {
               {errors.description && <span className="admin-field-error">{errors.description}</span>}
             </div>
 
-            <div className="admin-field admin-field-full">
+            <div className="admin-field admin-field-full" ref={categoryMenuRef}>
               <label htmlFor="event-category">Categoria</label>
-              <select
+              <button
                 id="event-category"
-                className={errors.category ? 'has-error' : ''}
-                value={form.category}
-                onChange={(event) => handleChange('category', event.target.value)}
+                type="button"
+                className={`admin-custom-select ${errors.category ? 'has-error' : ''} ${isCategoryOpen ? 'is-open' : ''}`}
+                onClick={() => setIsCategoryOpen((current) => !current)}
+                aria-haspopup="listbox"
+                aria-expanded={isCategoryOpen}
               >
-                <option value="">Selecciona una...</option>
-                {adminCategories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+                <span className={form.category ? 'has-value' : ''}>
+                  {form.category || 'Selecciona una...'}
+                </span>
+                <ChevronIcon />
+              </button>
+              {isCategoryOpen && (
+                <div className="admin-custom-select-menu" role="listbox" aria-labelledby="event-category">
+                  {adminCategories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`admin-custom-select-option ${form.category === category ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        handleChange('category', category);
+                        setIsCategoryOpen(false);
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              )}
               {errors.category && <span className="admin-field-error">{errors.category}</span>}
             </div>
 
@@ -259,8 +412,9 @@ function AdminCreateEvent() {
                 <span><UsersIcon /></span>
                 <input
                   id="event-capacity"
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={MAX_CAPACITY_DIGITS}
                   className={errors.capacity ? 'has-error' : ''}
                   placeholder="Ej. 5000"
                   value={form.capacity}
@@ -270,11 +424,29 @@ function AdminCreateEvent() {
               {errors.capacity && <span className="admin-field-error">{errors.capacity}</span>}
             </div>
 
+            <div className="admin-field">
+              <label htmlFor="event-price">Precio *</label>
+              <div className="admin-input-icon">
+                <span>$</span>
+                <input
+                  id="event-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={errors.price ? 'has-error' : ''}
+                  placeholder="Ej. 1500.00"
+                  value={form.price}
+                  onChange={(event) => handleChange('price', event.target.value)}
+                />
+              </div>
+              {errors.price && <span className="admin-field-error">{errors.price}</span>}
+            </div>
+
           </div>
 
           <div className="admin-form-footer">
             <button type="button" className="admin-ghost-button" onClick={() => navigate('/admin/dashboard')}>Cancelar</button>
-            <button type="submit" className="admin-submit-button">Guardar evento</button>
+            <button type="submit" className="admin-submit-button">{id ? 'Guardar cambios' : 'Publicar evento'}</button>
           </div>
 
           {feedback && <p className="purchase-note success-state admin-inline-feedback">{feedback}</p>}

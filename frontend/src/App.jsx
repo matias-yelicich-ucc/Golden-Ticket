@@ -1,11 +1,11 @@
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import HelloWorld from './components/HelloWorld';
-import EventDetail from './pages/EventDetail';
-import Register from './pages/Register';
-import MyTickets from './pages/MyTickets';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminCreateEvent from './pages/AdminCreateEvent';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import HomePage from './pages/home/HomePage';
+import AdminCreateEvent from './pages/admin/AdminCreateEvent';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import EventDetail from './pages/events/EventDetail';
+import MyTickets from './pages/tickets/MyTickets';
 
 const getStoredUser = () => {
   try {
@@ -17,7 +17,7 @@ const getStoredUser = () => {
 
 const hasToken = () => Boolean(localStorage.getItem('token'));
 const getUserRole = () => getStoredUser()?.rol;
-const isAdmin = () => getUserRole() === 'admin';
+const isAdmin = () => ['admin', 'administrador'].includes(getUserRole());
 
 const RequireAuth = ({ children }) => (hasToken() ? children : <Navigate to="/login" replace />);
 
@@ -40,7 +40,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<ClientOnly><HelloWorld /></ClientOnly>} />
+        <Route path="/" element={<ClientOnly><HomePage /></ClientOnly>} />
         <Route path="/eventos/:slug" element={<ClientOnly><EventDetail /></ClientOnly>} />
         <Route path="/mis-entradas" element={<RequireAuth><ClientOnly><MyTickets /></ClientOnly></RequireAuth>} />
         <Route path="/admin" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
@@ -51,6 +51,10 @@ function App() {
         />
         <Route
           path="/admin/create-event"
+          element={<RequireAdmin><><AdminDashboard /><AdminCreateEvent /></></RequireAdmin>}
+        />
+        <Route
+          path="/admin/eventos/:id/editar"
           element={<RequireAdmin><><AdminDashboard /><AdminCreateEvent /></></RequireAdmin>}
         />
         <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/Login.css';
-import { loginUser } from '../services/api/client';
+import '../../styles/Login.css';
+import { loginUser } from '../../services/api/client';
 
 const ErrorIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,13 +18,29 @@ const ArrowIcon = () => (
   </svg>
 );
 
+const EyeIcon = ({ open }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+    {!open && <path d="M4 4 20 20"></path>}
+  </svg>
+);
+
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === 'true') {
+      setGeneralError('Su sesión ha expirado. Debe iniciar nuevamente');
+    }
+  }, []);
 
   const validateForm = () => {
     const nextErrors = {};
@@ -34,7 +50,7 @@ function Login() {
       nextErrors.email = 'El formato del correo es invalido';
     }
     if (!password) {
-      nextErrors.password = 'La contrasena es obligatoria';
+      nextErrors.password = 'La contraseña es obligatoria';
     }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -60,7 +76,7 @@ function Login() {
       navigate('/');
     } catch (error) {
       if (error.response?.status === 401) {
-        setGeneralError('Email o contrasena incorrectos');
+        setGeneralError('Email o contraseña incorrectos');
       } else {
         setGeneralError(error.response?.data?.error || 'No se pudo conectar con el servidor');
       }
@@ -107,17 +123,26 @@ function Login() {
 
             <div className="input-group">
               <div className="input-header">
-                <label className="input-label" htmlFor="password">Contrasena</label>
+                <label className="input-label" htmlFor="password">Contraseña</label>
               </div>
               <div className="input-wrapper">
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   className={`login-input ${errors.password ? 'error' : ''}`}
                   placeholder="********"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
+                <button
+                  type="button"
+                  className={`password-toggle ${errors.password ? 'has-error' : ''}`}
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  aria-pressed={showPassword}
+                >
+                  <EyeIcon open={showPassword} />
+                </button>
                 {errors.password && (
                   <div className="error-icon">
                     <ErrorIcon />

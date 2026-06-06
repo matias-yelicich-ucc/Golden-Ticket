@@ -5,10 +5,8 @@ import (
 	"net/http"
 	"os"
 
-	"golden-ticket/backend/clients"
 	"golden-ticket/backend/controllers"
 	"golden-ticket/backend/dao"
-	"golden-ticket/backend/domain"
 	"golden-ticket/backend/middleware"
 	"golden-ticket/backend/services"
 
@@ -23,18 +21,20 @@ func main() {
 	}
 
 	// Initialize Database
-	clients.InitDB()
-
-	// AutoMigrate the User schema
-	if err := clients.DB.AutoMigrate(&domain.User{}); err != nil {
-		log.Fatalf("Error during AutoMigrate: %v", err)
-	}
-	log.Println("Database schemas auto-migrated successfully!")
+	dao.InitDB()
 
 	// Setup layers
 	userDAO := dao.NewUserDAO()
 	authService := services.NewAuthService(userDAO)
 	authController := controllers.NewAuthController(authService)
+
+	eventDAO := dao.NewEventDAO()
+	eventService := services.NewEventService(eventDAO)
+	eventController := controllers.NewEventController(eventService)
+
+	ticketDAO := dao.NewTicketDAO()
+	ticketService := services.NewTicketService(ticketDAO)
+	ticketController := controllers.NewTicketController(ticketService)
 
 	// Setup Router
 	r := gin.Default()
@@ -57,6 +57,9 @@ func main() {
 	// Public Routes
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
+	r.GET("/events", eventController.List)
+	r.GET("/events/:id", eventController.GetByID)
+	r.GET("/dashboard-stats", eventController.GetAdminDashboardStats)
 
 	// Protected routes (to verify JWT and roles middleware)
 	protected := r.Group("/")
@@ -72,15 +75,20 @@ func main() {
 			})
 		})
 
+		protected.POST("/events/:id/tickets", ticketController.Buy)
+		protected.GET("/my-tickets", ticketController.GetMyTickets)
+		protected.POST("/my-tickets/:id/transfer", ticketController.Transfer)
+		protected.POST("/my-tickets/:id/cancel", ticketController.Cancel)
+		protected.DELETE("/my-tickets/:id", ticketController.Cancel)
+
 		// Admin-only test route
 		adminOnly := protected.Group("/admin")
-		adminOnly.Use(middleware.AuthorizeRole("administrador"))
+		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
-			adminOnly.GET("/dashboard", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"message": "Welcome to the Admin Dashboard",
-				})
-			})
+			adminOnly.GET("/dashboard", eventController.GetAdminDashboardStats)
+			adminOnly.POST("/events", eventController.Create)
+			adminOnly.PUT("/events/:id", eventController.Update)
+			adminOnly.DELETE("/events/:id", eventController.Delete)
 		}
 	}
 

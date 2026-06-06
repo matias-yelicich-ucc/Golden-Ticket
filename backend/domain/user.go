@@ -10,6 +10,8 @@ type User struct {
 	Email     string    `gorm:"type:varchar(191);uniqueIndex;not null" json:"email"` // 191 is MySQL safe index size
 	Password  string    `gorm:"type:varchar(255);not null" json:"-"`
 	Rol       string    `gorm:"type:varchar(50);not null;default:'cliente'" json:"rol"`
+	DNI       string    `gorm:"type:varchar(20);uniqueIndex;not null" json:"dni"`
+	Tickets   []Ticket  `gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"tickets,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -21,6 +23,7 @@ type UserRegisterDTO struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
 	Rol      string `json:"rol" binding:"omitempty,oneof=cliente administrador"`
+	DNI      string `json:"dni" binding:"required"`
 }
 
 // UserLoginDTO is used for incoming login requests
@@ -36,6 +39,7 @@ type UserResponseDTO struct {
 	Apellido string `json:"apellido"`
 	Email    string `json:"email"`
 	Rol      string `json:"rol"`
+	DNI      string `json:"dni"`
 }
 
 // LoginResponseDTO is returned upon successful authentication

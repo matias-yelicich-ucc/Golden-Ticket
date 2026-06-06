@@ -1,439 +1,209 @@
 # Golden Ticket
 
-Sistema de Gestión de Eventos y Entradas tipo Ticketek desarrollado para el Práctico Integrador 2026 de Desarrollo de Software.
+Golden Ticket es una plataforma web para gestion de eventos y entradas, pensada para cubrir tanto la experiencia del cliente como la operacion administrativa. El sistema permite explorar eventos, comprar y gestionar entradas, y al mismo tiempo brinda un panel de administracion para crear eventos, editar su informacion y consultar metricas de ventas y ocupacion.
 
----
-
-## Descripción
-
-Golden Ticket es una aplicación web para la gestión de eventos y entradas.
-
-El sistema permite que los clientes puedan:
-
-- Explorar eventos disponibles.
-- Buscar y filtrar eventos.
-- Ver el detalle completo de cada evento.
-- Comprar entradas.
-- Consultar sus entradas adquiridas.
-- Cancelar compras.
-- Transferir entradas a otros usuarios.
-
-Además, incluye un panel de administración que permite:
-
-- Crear eventos.
-- Editar eventos.
-- Eliminar o cancelar eventos.
-- Consultar reportes de ocupación y ventas.
-
----
-
-## Integrantes
+# Integrantes
 - Baudino, José
 - Romanutti, Andrés
 - Yelicich. Matías
 
----
+## Tabla de contenidos
 
-## Tecnologías utilizadas
+- [Descripcion general](#descripcion-general)
+- [Capturas de pantalla](#capturas-de-pantalla)
+- [Tecnologias utilizadas](#tecnologias-utilizadas)
+- [Requisitos previos](#requisitos-previos)
+- [Instalacion y uso](#instalacion-y-uso)
+- [Testing](#testing)
+- [Diagrama de base de datos](#diagrama-de-base-de-datos)
+- [Decisiones de diseño](#decisiones-de-diseño)
+
+## Descripcion general
+
+El proyecto esta dividido en dos capas:
+
+- `backend/`: API REST en Go que gestiona autenticacion, eventos, tickets y estadisticas.
+- `frontend/`: aplicacion React que consume la API y expone flujos diferenciados para clientes y administradores.
+
+Flujos principales implementados:
+
+- Registro e inicio de sesion con JWT.
+- Navegacion publica del catalogo de eventos.
+- Visualizacion del detalle de cada evento.
+- Compra, transferencia y cancelacion de entradas.
+- Vista de `Mis entradas`.
+- Panel de administracion con CRUD de eventos y metricas.
+
+## Capturas de pantalla
+
+Las siguientes vistas de referencia se encuentran versionadas dentro de `docs/screenshots/`:
+
+### Auth
+
+![Signin](docs/screenshots/screenshot_signin.png)
+
+![Sign](docs/screenshots/screenshot_signup.png)
+
+### Home
+
+![Home](docs/screenshots/screenshot_home.png)
+
+### Detalle de evento
+
+![Detalle de evento](docs/screenshots/screenshot_detalles_evento.png)
+
+### Mis entradas
+
+![Mis entradas](docs/screenshots/screenshot_mis_entradas.png)
+
+### Panel de administracion
+
+![Panel de administracion](docs/screenshots/screenshot_admin.png)
+
+### Crear evento
+
+![Crear evento](docs/screenshots/screenshot_crear_evento.png)
+
+## Tecnologias utilizadas
 
 ### Backend
-- Golang
+
+- Go `1.25`
 - Gin
 - GORM
 - MySQL
-- JWT
-- Hashing de contraseñas
-- Testing con `testing`, `httptest` y/o `testify`
+- JWT (`github.com/golang-jwt/jwt/v5`)
+- dotenv (`github.com/joho/godotenv`)
 
 ### Frontend
-- React
+
+- React `19`
 - Vite
 - React Router DOM
 - Axios
-- CSS
+- CSS custom
 
-### DevOps
-- Docker
-- Docker Compose
+### Herramientas de desarrollo
 
----
+- Git y GitHub
+- npm
+- Go test / httptest
 
-## Estructura del proyecto
+## Requisitos previos
 
-```txt
-golden-ticket/
-│
-├── backend/
-│   ├── clients/
-│   ├── controllers/
-│   ├── dao/
-│   ├── domain/
-│   ├── services/
-│   ├── utils/
-│   ├── main.go
-│   ├── go.mod
-│   └── go.sum
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── routes/
-│   │   ├── styles/
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
-│
-├── docs/
-│   ├── database-diagram.png
-│   └── screenshots/
-│
-├── docker-compose.yml
-├── README.md
-└── .gitignore
-```
+Antes de ejecutar el proyecto localmente necesitas:
 
----
+- `Go 1.25` o superior
+- `Node.js 20` o superior
+- `npm 10` o superior
+- `MySQL 8` o compatible
+- Una base de datos creada manualmente, por ejemplo `golden_ticket`
 
-## Funcionalidades del cliente
-- [ ] Registro de usuario.
-- [ ] Inicio de sesión.
-- [ ] Cierre de sesión.
-- [ ] Visualización del catálogo de eventos.
-- [ ] Búsqueda de eventos.
-- [ ] Filtrado de eventos por categoría, fecha o disponibilidad.
-- [ ] Visualización del detalle de un evento.
-- [ ] Compra de entrada.
-- [ ] Mensaje de compra exitosa.
-- [ ] Manejo visible de errores al comprar.
-- [ ] Visualización de entradas adquiridas.
-- [ ] Cancelación de entrada.
-- [ ] Transferencia de entrada a otro usuario.
+## Instalacion y uso
 
----
+### 1. Clonar el repositorio
 
-## Funcionalidades del administrador
-- [ ] Inicio de sesión como administrador.
-- [ ] Acceso a panel de administración protegido.
-- [ ] Listado general de eventos.
-- [ ] Creación de nuevos eventos.
-- [ ] Edición de eventos existentes.
-- [ ] Eliminación o cancelación de eventos.
-- [ ] Visualización de métricas por evento.
-- [ ] Reporte de entradas vendidas.
-- [ ] Reporte de cupo disponible.
-- [ ] Reporte de porcentaje de ocupación.
-- [ ] Listado de compradores por evento.
-
----
-
-## Backend
-- [ ] API REST desarrollada en Golang.
-- [ ] Servidor HTTP configurado.
-- [ ] Uso de Gin como framework web.
-- [ ] Estructura organizada por capas.
-- [ ] Separación entre controladores, servicios, DAOs, modelos y utilidades.
-- [ ] Manejo correcto de errores.
-- [ ] Respuestas HTTP con códigos de estado adecuados.
-- [ ] Validación de datos recibidos desde el frontend.
-- [ ] Separación entre modelos de base de datos y DTOs.
-
----
-
-## Autenticación y seguridad
-- [ ] Endpoint de registro.
-- [ ] Endpoint de login.
-- [ ] Generación de token JWT.
-- [ ] Token JWT firmado.
-- [ ] Token JWT con expiración.
-- [ ] Token con ID del usuario.
-- [ ] Token con rol del usuario.
-- [ ] Roles de usuario: `cliente` y `administrador`.
-- [ ] Contraseñas hasheadas.
-- [ ] Las contraseñas no se guardan en texto plano.
-- [ ] Middleware de autenticación.
-- [ ] Middleware de autorización por rol.
-- [ ] Validación de permisos en endpoints protegidos.
-- [ ] Validación de permisos de administrador en endpoints administrativos.
-
----
-
-## Base de datos
-- [ ] Base de datos MySQL.
-- [ ] Conexión desde Golang usando GORM.
-- [ ] Migración o creación automática de tablas.
-- [ ] Relaciones configuradas con claves foráneas.
-- [ ] Modelo sin duplicación innecesaria de información.
-
-### Entidades principales
-- [ ] Usuarios.
-- [ ] Eventos.
-- [ ] Entradas.
-
-### Entidades opcionales
-- [ ] Categorías.
-- [ ] Transferencias.
-- [ ] Compras.
-- [ ] Reportes.
-- [ ] Imágenes de eventos.
-
----
-
-## Usuario
-- [ ] ID.
-- [ ] Nombre.
-- [ ] Apellido.
-- [ ] Email o username.
-- [ ] Contraseña hasheada.
-- [ ] Rol.
-- [ ] Fecha de creación.
-- [ ] Fecha de actualización.
-
----
-
-## Evento
-- [ ] ID.
-- [ ] Título.
-- [ ] Descripción.
-- [ ] Imagen o foto.
-- [ ] Fecha.
-- [ ] Horario.
-- [ ] Duración.
-- [ ] Ubicación.
-- [ ] Categoría.
-- [ ] Cupo máximo.
-- [ ] Cupo disponible o entradas vendidas.
-- [ ] Precio.
-- [ ] Estado.
-- [ ] Fecha de creación.
-- [ ] Fecha de actualización.
-
----
-
-## Entrada
-- [ ] ID.
-- [ ] Código o identificador único.
-- [ ] Usuario titular.
-- [ ] Evento asociado.
-- [ ] Estado.
-- [ ] Fecha de compra.
-- [ ] Fecha de cancelación.
-- [ ] Fecha de transferencia.
-
----
-
-## Endpoints principales
-
-### Autenticación
-```txt
-POST /register
-POST /login
-```
-
-### Eventos públicos
-```txt
-GET /events
-GET /events/:id
-```
-
-### Cliente
-```txt
-POST /events/:id/tickets
-GET /my-tickets
-DELETE /tickets/:id
-POST /tickets/:id/transfer
-```
-
-### Administrador
-```txt
-POST /admin/events
-PUT /admin/events/:id
-DELETE /admin/events/:id
-GET /admin/events/:id/reports
-```
-
----
-
-## Frontend
-- [ ] Aplicación desarrollada en React.
-- [ ] Uso de Vite.
-- [ ] Uso de React Router DOM.
-- [ ] Uso de Axios para consumir la API.
-- [ ] Manejo de rutas públicas.
-- [ ] Manejo de rutas protegidas.
-- [ ] Manejo de rutas exclusivas para administrador.
-- [ ] Manejo de estados de carga.
-- [ ] Manejo visual de errores.
-- [ ] Diseño responsive.
-
----
-
-## Pantallas del frontend
-
-### Públicas
-- [ ] Login.
-- [ ] Registro.
-- [ ] Home / Catálogo de eventos.
-- [ ] Detalle de evento.
-
-### Cliente
-- [ ] Gestión de compra.
-- [ ] Compra exitosa.
-- [ ] Mis entradas.
-- [ ] Cancelar entrada.
-- [ ] Transferir entrada.
-
-### Administrador
-- [ ] Panel de administración.
-- [ ] Formulario de creación de evento.
-- [ ] Formulario de edición de evento.
-- [ ] Confirmación de eliminación de evento.
-- [ ] Reportes y métricas.
-
----
-
-## Testing
-- [ ] Tests unitarios en backend.
-- [ ] Tests de servicios.
-- [ ] Tests de controladores.
-- [ ] Tests de integración HTTP.
-- [ ] Tests de endpoints públicos.
-- [ ] Tests de endpoints protegidos.
-- [ ] Tests de endpoints administrativos.
-- [ ] Tests de login correcto.
-- [ ] Tests de login inválido.
-- [ ] Tests de compra de entrada.
-- [ ] Tests de cancelación de entrada.
-- [ ] Tests de transferencia de entrada.
-- [ ] Cobertura mínima del 40% para regularidad.
-- [ ] Cobertura objetivo del 80% para examen final.
-
----
-
-## Códigos de estado esperados
-- [ ] `200 OK` para operaciones exitosas.
-- [ ] `201 Created` para creación exitosa.
-- [ ] `400 Bad Request` para datos inválidos.
-- [ ] `401 Unauthorized` para login inválido o token ausente.
-- [ ] `403 Forbidden` para usuario sin permisos.
-- [ ] `404 Not Found` para recurso inexistente.
-- [ ] `409 Conflict` para conflictos de negocio.
-- [ ] `500 Internal Server Error` para errores inesperados.
-
----
-
-## Docke
-- [ ] Dockerfile para backend.
-- [ ] Dockerfile para frontend.
-- [ ] Docker Compose configurado.
-- [ ] Servicio de backend.
-- [ ] Servicio de frontend.
-- [ ] Servicio de MySQL.
-- [ ] Variables de entorno configuradas.
-- [ ] El proyecto puede levantarse con un solo comando.
-
----
-
-## Instalación y ejecución
-
-### Clonar repositorio
 ```bash
-git clone URL_DEL_REPOSITORIO
-cd golden-ticket
+git clone git@github.com:matias-yelicich-ucc/Golden-Ticket.git
+cd Golden-Ticket
 ```
 
-### Ejecutar backend
+### 2. Configurar variables de entorno
+
+#### Backend
+
+Crear `backend/.env`:
+
+```env
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=tu_password
+DB_NAME=golden_ticket
+JWT_SECRET=tu_secreto
+JWT_EXPIRATION_HOURS=24
+SERVER_PORT=8080
+```
+
+#### Frontend
+
+Crear `frontend/.env`:
+
+```env
+VITE_API_URL=http://localhost:8080
+```
+
+### 3. Crear la base de datos
+
+```sql
+CREATE DATABASE golden_ticket;
+```
+
+### 4. Levantar el backend
+
 ```bash
 cd backend
 go mod tidy
 go run main.go
 ```
 
-### Ejecutar frontend
+Notas:
+
+- El backend corre por defecto en `http://localhost:8080`.
+- Las tablas se generan por automigracion al iniciar.
+
+### 5. Levantar el frontend
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Ejecutar con Docker
-```bash
-docker compose up --build
+El frontend queda disponible normalmente en:
+
+```txt
+http://localhost:5173
 ```
 
----
-
-## Variables de entorno
+## Testing
 
 ### Backend
-```env
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=password
-DB_NAME=golden_ticket
-JWT_SECRET=secret
-JWT_EXPIRATION_HOURS=24
-SERVER_PORT=8080
+
+Ejecutar todos los tests:
+
+```bash
+cd backend
+go test ./...
 ```
 
 ### Frontend
-```env
-VITE_API_URL=http://localhost:8080
+
+Actualmente el frontend no tiene una suite automatizada de tests unitarios integrada en `package.json`. Como validaciones disponibles hoy se pueden ejecutar:
+
+```bash
+cd frontend
+npm run build
+npm run lint
 ```
 
----
-
-## Documentación
-- [ ] README completo.
-- [ ] Instrucciones de instalación.
-- [ ] Instrucciones de ejecución.
-- [ ] Instrucciones para correr tests.
-- [ ] Capturas de pantalla.
-- [ ] Diagrama de base de datos.
-- [ ] Decisiones de diseño.
-- [ ] Documentación de endpoints principales.
-
----
-
-## Capturas de pantalla
-- [ ] Login.
-- [ ] Registro.
-- [ ] Home / Catálogo.
-- [ ] Detalle de evento.
-- [ ] Compra exitosa.
-- [ ] Mis entradas.
-- [ ] Panel administrador.
-- [ ] Formulario de evento.
-- [ ] Reportes y métricas.
-
----
-
 ## Diagrama de base de datos
+
+El diagrama se encuentra dentro de `docs/database-diagram.svg` y resume las entidades principales y sus relaciones.
+
 ![Diagrama de base de datos](docs/database-diagram.png)
 
----
-
 ## Decisiones de diseño
-### Baja lógica de eventos
-Los eventos pueden manejarse mediante baja lógica para evitar perder información histórica de compras y reportes.
 
-### Liberación de cupo
-Cuando una entrada se cancela, el cupo del evento vuelve a estar disponible si el evento sigue activo.
+### 1. Separacion por capas en el backend
 
-### Separación de capas
-El backend separa controladores, servicios y acceso a datos para mejorar mantenibilidad y testeo.
+Se adopto una estructura `controllers -> services -> dao -> domain` para desacoplar responsabilidades. Esto facilita el testeo aislado, reduce el acoplamiento entre reglas de negocio y acceso a datos, y simplifica la evolucion de la API.
 
-### Autorización por roles
-Las acciones administrativas se protegen validando el rol del usuario desde el token JWT.
+### 2. Conservacion del historial de tickets ante eliminacion de eventos
 
----
+La relacion entre `tickets` y `events` se resolvio con `ON DELETE SET NULL`. Esto permite eliminar o depurar eventos sin perder el historial de compras ni invalidar el ticket como registro historico del sistema.
 
-## Bonus Track
-- [ ] Definir funcionalidad extra.
-- [ ] Informar la funcionalidad extra al docente.
-- [ ] Implementar funcionalidad extra.
-- [ ] Documentar funcionalidad extra.
-- [ ] Agregar tests si corresponde.
+### 3. Diferenciacion explicita entre experiencia cliente y experiencia administrador
+
+El frontend distingue los flujos de usuarios finales y administradores mediante rutas, paneles y acciones diferentes. Esta separacion reduce errores operativos, evita mezclar permisos en la interfaz y hace mas clara la navegacion para cada rol.
+
