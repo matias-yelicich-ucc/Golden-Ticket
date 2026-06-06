@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="760" viewBox="0 0 1400 760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111"/>
+      <stop offset="100%" stop-color="#18150f"/>
+    </linearGradient>
+    <style>
+      .card { fill: #171717; stroke: rgba(212,175,55,0.28); stroke-width: 2; }
+      .title { font: 700 54px Arial, sans-serif; fill: #f7f3eb; }
+      .text { font: 500 22px Arial, sans-serif; fill: #d7d0c4; }
+      .metric { font: 700 48px Arial, sans-serif; fill: #f7f3eb; }
+      .small { font: 700 18px Arial, sans-serif; fill: #b8ac8c; }
+    </style>
+  </defs>
+  <rect width="1400" height="760" fill="url(#bg)"/>
+  <text x="70" y="100" class="title">Panel de administracion</text>
+  <text x="70" y="145" class="text">Vista operativa para gestion de eventos y seguimiento de metricas.</text>
+  <rect x="70" y="210" width="290" height="150" rx="22" class="card"/>
+  <rect x="390" y="210" width="290" height="150" rx="22" class="card"/>
+  <rect x="710" y="210" width="290" height="150" rx="22" class="card"/>
+  <rect x="1030" y="210" width="290" height="150" rx="22" class="card"/>
+  <text x="100" y="265" class="small">TOTAL EVENTOS</text>
+  <text x="100" y="325" class="metric">4</text>
+  <text x="420" y="265" class="small">ENTRADAS VENDIDAS</text>
+  <text x="420" y="325" class="metric">8</text>
+  <text x="740" y="265" class="small">OCUPACION MEDIA</text>
+  <text x="740" y="325" class="metric">39%</text>
+  <text x="1060" y="265" class="small">RECAUDACION</text>
+  <text x="1060" y="325" class="metric">$137.500</text>
+  <rect x="70" y="410" width="1260" height="260" rx="22" class="card"/>
+  <text x="100" y="470" style="font:700 34px Arial,sans-serif; fill:#f7f3eb;">Eventos proximos</text>
+  <text x="100" y="535" class="text">Conferencia Tech Summit 2026</text>
+  <text x="100" y="580" class="text">Festival Indie Nights</text>
+  <text x="100" y="625" class="text">Workshop de Fotografia Urbana</text>
+</svg>

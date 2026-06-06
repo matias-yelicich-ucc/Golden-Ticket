@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111111"/>
+      <stop offset="100%" stop-color="#191714"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#24211d"/>
+      <stop offset="100%" stop-color="#181614"/>
+    </linearGradient>
+    <style>
+      .title { font: 700 20px Arial, sans-serif; fill: #101010; }
+      .header { fill: #d4af37; }
+      .body { fill: url(#card); stroke: rgba(212,175,55,0.45); stroke-width: 2; }
+      .field { font: 500 18px Arial, sans-serif; fill: #f6f0e3; }
+      .note { font: 600 18px Arial, sans-serif; fill: #d8c896; }
+      .line { stroke: #d4af37; stroke-width: 3; fill: none; }
+      .label { font: 600 16px Arial, sans-serif; fill: #d4af37; }
+      .heading { font: 700 30px Arial, sans-serif; fill: #f7f3eb; }
+      .sub { font: 500 18px Arial, sans-serif; fill: #b9b1a6; }
+    </style>
+  </defs>
+  <rect width="1200" height="760" fill="url(#bg)"/>
+  <text x="60" y="70" class="heading">Diagrama de Base de Datos</text>
+  <text x="60" y="105" class="sub">Entidades principales del sistema y relaciones implementadas con claves foraneas.</text>
+
+  <g transform="translate(70,160)">
+    <rect width="290" height="360" rx="20" class="body"/>
+    <rect width="290" height="58" rx="20" class="header"/>
+    <text x="26" y="36" class="title">users</text>
+    <text x="24" y="92" class="field">• id (PK)</text>
+    <text x="24" y="124" class="field">• nombre</text>
+    <text x="24" y="156" class="field">• apellido</text>
+    <text x="24" y="188" class="field">• email</text>
+    <text x="24" y="220" class="field">• password</text>
+    <text x="24" y="252" class="field">• rol</text>
+    <text x="24" y="284" class="field">• dni</text>
+    <text x="24" y="316" class="field">• created_at</text>
+    <text x="24" y="348" class="field">• updated_at</text>
+  </g>
+
+  <g transform="translate(455,160)">
+    <rect width="290" height="420" rx="20" class="body"/>
+    <rect width="290" height="58" rx="20" class="header"/>
+    <text x="26" y="36" class="title">events</text>
+    <text x="24" y="92" class="field">• id (PK)</text>
+    <text x="24" y="124" class="field">• titulo</text>
+    <text x="24" y="156" class="field">• descripcion</text>
+    <text x="24" y="188" class="field">• categoria</text>
+    <text x="24" y="220" class="field">• fecha</text>
+    <text x="24" y="252" class="field">• hora_inicio</text>
+    <text x="24" y="284" class="field">• hora_fin</text>
+    <text x="24" y="316" class="field">• ubicacion</text>
+    <text x="24" y="348" class="field">• coordenadas</text>
+    <text x="24" y="380" class="field">• url_imagen</text>
+    <text x="24" y="412" class="field">• capacidad</text>
+    <text x="24" y="444" class="field">• precio</text>
+    <text x="24" y="476" class="field">• created_at</text>
+    <text x="24" y="508" class="field">• updated_at</text>
+  </g>
+
+  <g transform="translate(840,220)">
+    <rect width="290" height="300" rx="20" class="body"/>
+    <rect width="290" height="58" rx="20" class="header"/>
+    <text x="26" y="36" class="title">tickets</text>
+    <text x="24" y="92" class="field">• id (PK)</text>
+    <text x="24" y="124" class="field">• user_id (FK)</text>
+    <text x="24" y="156" class="field">• event_id (FK, nullable)</text>
+    <text x="24" y="188" class="field">• estado</text>
+    <text x="24" y="220" class="field">• fecha_compra</text>
+  </g>
+
+  <path d="M360 340 C430 340, 410 370, 455 370" class="line"/>
+  <text x="376" y="324" class="label">1 usuario - N tickets</text>
+
+  <path d="M745 390 C800 390, 790 390, 840 390" class="line"/>
+  <text x="742" y="364" class="label">1 evento - N tickets</text>
+
+  <text x="850" y="580" class="note">Relacion clave:</text>
+  <text x="850" y="612" class="field">tickets.user_id  → users.id</text>
+  <text x="850" y="644" class="field">tickets.event_id → events.id</text>
+  <text x="850" y="686" class="field">OnDelete de event_id: SET NULL</text>
+</svg>
+
