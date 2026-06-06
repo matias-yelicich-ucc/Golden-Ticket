@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import '../../styles/App.css';
 import { adminCategories } from '../../constants/admin';
@@ -58,6 +58,12 @@ const CloseIcon = () => (
   </svg>
 );
 
+const ChevronIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="m7 10 5 5 5-5" />
+  </svg>
+);
+
 const createInitialForm = () => ({
   title: '',
   description: '',
@@ -72,11 +78,15 @@ const createInitialForm = () => ({
   imageUrl: '',
 });
 
+const MAX_CAPACITY_DIGITS = 7;
+
 function AdminCreateEvent() {
   const { id } = useParams();
   const [form, setForm] = useState(createInitialForm);
   const [errors, setErrors] = useState({});
   const [feedback, setFeedback] = useState('');
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const categoryMenuRef = useRef(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -138,7 +148,39 @@ function AdminCreateEvent() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (!isCategoryOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!categoryMenuRef.current?.contains(event.target)) {
+        setIsCategoryOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsCategoryOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isCategoryOpen]);
+
   const handleChange = (field, value) => {
+    if (field === 'capacity') {
+      const sanitized = value.replace(/\D/g, '').slice(0, MAX_CAPACITY_DIGITS);
+      setForm((current) => ({ ...current, [field]: sanitized }));
+      setErrors((current) => ({ ...current, [field]: '' }));
+      setFeedback('');
+      return;
+    }
+
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: '' }));
     setFeedback('');
@@ -156,6 +198,8 @@ function AdminCreateEvent() {
     if (!form.location.trim()) nextErrors.location = 'La ubicacion es obligatoria.';
     if (!form.coordinates.trim()) nextErrors.coordinates = 'Las coordenadas son obligatorias.';
     if (!form.capacity.trim()) nextErrors.capacity = 'La capacidad es obligatoria.';
+    else if (!/^\d+$/.test(form.capacity)) nextErrors.capacity = 'La capacidad debe contener solo numeros.';
+    else if (form.capacity.length > MAX_CAPACITY_DIGITS) nextErrors.capacity = `La capacidad no puede superar los ${MAX_CAPACITY_DIGITS} digitos.`;
     if (!form.price.trim()) nextErrors.price = 'El precio es obligatorio.';
     else if (isNaN(form.price) || parseFloat(form.price) < 0) nextErrors.price = 'El precio debe ser un número mayor o igual a 0.';
     setErrors(nextErrors);
@@ -237,19 +281,38 @@ function AdminCreateEvent() {
               {errors.description && <span className="admin-field-error">{errors.description}</span>}
             </div>
 
-            <div className="admin-field admin-field-full">
+            <div className="admin-field admin-field-full" ref={categoryMenuRef}>
               <label htmlFor="event-category">Categoria</label>
-              <select
+              <button
                 id="event-category"
-                className={errors.category ? 'has-error' : ''}
-                value={form.category}
-                onChange={(event) => handleChange('category', event.target.value)}
+                type="button"
+                className={`admin-custom-select ${errors.category ? 'has-error' : ''} ${isCategoryOpen ? 'is-open' : ''}`}
+                onClick={() => setIsCategoryOpen((current) => !current)}
+                aria-haspopup="listbox"
+                aria-expanded={isCategoryOpen}
               >
-                <option value="">Selecciona una...</option>
-                {adminCategories.map((category) => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+                <span className={form.category ? 'has-value' : ''}>
+                  {form.category || 'Selecciona una...'}
+                </span>
+                <ChevronIcon />
+              </button>
+              {isCategoryOpen && (
+                <div className="admin-custom-select-menu" role="listbox" aria-labelledby="event-category">
+                  {adminCategories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className={`admin-custom-select-option ${form.category === category ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        handleChange('category', category);
+                        setIsCategoryOpen(false);
+                      }}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              )}
               {errors.category && <span className="admin-field-error">{errors.category}</span>}
             </div>
 
@@ -349,8 +412,9 @@ function AdminCreateEvent() {
                 <span><UsersIcon /></span>
                 <input
                   id="event-capacity"
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={MAX_CAPACITY_DIGITS}
                   className={errors.capacity ? 'has-error' : ''}
                   placeholder="Ej. 5000"
                   value={form.capacity}
