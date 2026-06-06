@@ -1145,25 +1145,66 @@
 
 .tickets-list {
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .ticket-history-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.7fr) minmax(260px, 0.9fr);
-  gap: 18px;
-  align-items: start;
-  padding: 24px;
-  border: 1px solid rgba(212, 175, 55, 0.16);
-  border-radius: 18px;
-  background: rgba(20, 20, 20, 0.96);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+  grid-template-columns: minmax(0, 1.7fr) minmax(180px, 0.72fr) minmax(250px, 0.9fr);
+  gap: 24px;
+  align-items: center;
+  padding: 24px 26px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at right center, rgba(212, 175, 55, 0.1), transparent 28%),
+    linear-gradient(135deg, rgba(41, 39, 34, 0.96), rgba(19, 18, 17, 0.98));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.24);
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-history-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), rgba(212, 175, 55, 0.18) calc(100% - 1px)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 30%);
+  pointer-events: none;
+}
+
+.ticket-history-main,
+.ticket-history-meta,
+.ticket-history-actions {
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-history-main {
+  display: grid;
+  gap: 12px;
+}
+
+.ticket-history-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #f2eadb;
+  font-size: 1.02rem;
+}
+
+.ticket-history-detail-row svg {
+  flex: 0 0 auto;
+  color: #d4af37;
 }
 
 .ticket-history-card h3 {
   margin: 0 0 8px;
   color: #f7f3eb;
-  font-size: 1.4rem;
+  font-size: clamp(1.55rem, 2vw, 2.1rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
 }
 
 .ticket-history-card p,
@@ -1173,23 +1214,106 @@
 
 .ticket-history-meta {
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  justify-items: center;
+  align-content: center;
+}
+
+.ticket-history-meta-label {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+}
+
+.ticket-history-meta > span:first-child {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.92rem;
+  letter-spacing: 0.03em;
+}
+
+.ticket-history-code-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ticket-history-code-wrap svg {
+  color: rgba(255, 255, 255, 0.45);
 }
 
 .ticket-history-meta strong {
-  color: #f6df9c;
-  font-size: 1.5rem;
+  color: #fffdf7;
+  font-size: clamp(2.8rem, 5vw, 4rem);
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.ticket-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 112px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ticket-status-pill.is-active {
+  background: rgba(34, 197, 94, 0.16);
+  color: #6be892;
+  border: 1px solid rgba(34, 197, 94, 0.32);
+}
+
+.ticket-status-pill.is-inactive {
+  background: rgba(239, 68, 68, 0.16);
+  color: #ff8f8f;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .ticket-history-actions {
   display: grid;
+  gap: 12px;
+}
+
+.ticket-history-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.ticket-history-action:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.ticket-history-action svg {
+  flex: 0 0 auto;
+}
+
+.ticket-history-action-primary {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 18px rgba(212, 175, 55, 0.16);
+}
+
+.ticket-history-action-secondary {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.ticket-history-action-danger {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .ticket-history-actions button {
-  min-height: 44px;
+  min-height: 48px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(179, 135, 40, 0.28));
   color: #f6df9c;
   font-weight: 800;

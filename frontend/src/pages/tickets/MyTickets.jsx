@@ -46,6 +46,28 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const EyeIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
+    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const TransferIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
+    <path d="M4 12h12" />
+    <path d="m12 6 6 6-6 6" />
+    <path d="M20 5v14" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
+    <path d="m6 6 12 12" />
+    <path d="m18 6-12 12" />
+  </svg>
+);
+
 const PlusIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '18px', height: '18px', fill: 'none', stroke: 'currentColor', strokeWidth: '2' }}>
     <path d="M12 5v14" />
@@ -229,17 +251,14 @@ function MyTickets() {
           <div className="tickets-list">
             {tickets.map((ticket) => (
               <article key={ticket.id} className="ticket-history-card">
-                {/* Column 1: Event Info */}
-                <div>
-                  <span className="category-pill" style={{ display: 'inline-block', marginBottom: '8px' }}>
-                    {ticket.event?.categoria || 'Espectáculo'}
-                  </span>
+                {/* Ticket summary */}
+                <div className="ticket-history-main">
                   <h3>{ticket.event?.titulo || 'Evento Desconocido'}</h3>
-                  <div className="event-date" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                  <div className="ticket-history-detail-row">
                     <CalendarIcon />
                     <span>{ticket.event?.fecha || 'Fecha pendiente'} — {ticket.event?.hora_inicio || ''}</span>
                   </div>
-                  <div className="event-location" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="ticket-history-detail-row">
                     <PinIcon />
                     <span>{ticket.event?.ubicacion || 'Ubicación pendiente'}</span>
                   </div>
@@ -248,18 +267,10 @@ function MyTickets() {
                 {/* Column 2: Ticket details */}
                 <div className="ticket-history-meta">
                   <span>Código de entrada</span>
-                  <strong>#{ticket.id}</strong>
-                  <span style={{ 
-                    display: 'inline-block', 
-                    padding: '4px 10px', 
-                    borderRadius: '20px', 
-                    fontSize: '0.85rem', 
-                    fontWeight: 'bold', 
-                    textAlign: 'center',
-                    background: ticket.estado === 'activo' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                    color: ticket.estado === 'activo' ? '#22c55e' : '#ef4444',
-                    border: ticket.estado === 'activo' ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
-                  }}>
+                  <div className="ticket-history-code-wrap">
+                    <strong>#{ticket.id}</strong>
+                  </div>
+                  <span className={`ticket-status-pill ${ticket.estado === 'activo' ? 'is-active' : 'is-inactive'}`}>
                     {ticket.estado === 'activo' ? 'Activo' : (ticket.event ? 'Cancelado' : 'Evento cancelado')}
                   </span>
                 </div>
@@ -268,6 +279,7 @@ function MyTickets() {
                 <div className="ticket-history-actions">
                   <button 
                     type="button" 
+                    className="ticket-history-action ticket-history-action-primary"
                     style={{ 
                       background: 'linear-gradient(135deg, #d4af37 0%, #b38728 100%)', 
                       color: '#111', 
@@ -278,10 +290,12 @@ function MyTickets() {
                       setIsModalOpen(true);
                     }}
                   >
+                    <EyeIcon />
                     Ver Entrada
                   </button>
                   <button 
                     type="button" 
+                    className="ticket-history-action ticket-history-action-secondary"
                     disabled={ticket.estado !== 'activo'} 
                     style={{ 
                       opacity: ticket.estado === 'activo' ? 1 : 0.6, 
@@ -303,10 +317,12 @@ function MyTickets() {
                       }
                     }}
                   >
+                    <TransferIcon />
                     Transferir entrada
                   </button>
                   <button 
                     type="button" 
+                    className="ticket-history-action ticket-history-action-danger"
                     disabled={ticket.estado !== 'activo'} 
                     style={{ 
                       opacity: ticket.estado === 'activo' ? 1 : 0.6, 
@@ -327,6 +343,7 @@ function MyTickets() {
                       }
                     }}
                   >
+                    <CloseIcon />
                     Cancelar compra
                   </button>
                 </div>
