@@ -30,18 +30,47 @@ func (m *mockEventDAO) Create(event *domain.Event) error {
 }
 
 func (m *mockEventDAO) GetByID(id uint) (*domain.Event, error) {
-	for _, e := range m.events {
-		if e.ID == id {
-			return e, nil
+	for _, event := range m.events {
+		if event.ID == id {
+			return event, nil
 		}
 	}
 	return nil, errors.New("event not found")
 }
 
+func (m *mockEventDAO) GetAdminDashboardStats() (*domain.AdminDashboardStatsDTO, error) {
+	totalEventos := len(m.events)
+	entradasVendidas := 0
+	capacidadTotal := 0
+	recaudacionTotal := 0.0
+
+	for _, event := range m.events {
+		capacidadTotal += event.Capacidad
+		for _, ticket := range event.Tickets {
+			if ticket.Estado == "activo" {
+				entradasVendidas++
+				recaudacionTotal += event.Precio
+			}
+		}
+	}
+
+	ocupacionMedia := 0.0
+	if capacidadTotal > 0 {
+		ocupacionMedia = (float64(entradasVendidas) / float64(capacidadTotal)) * 100
+	}
+
+	return &domain.AdminDashboardStatsDTO{
+		TotalEventos:     totalEventos,
+		EntradasVendidas: entradasVendidas,
+		OcupacionMedia:   ocupacionMedia,
+		RecaudacionTotal: recaudacionTotal,
+	}, nil
+}
+
 func (m *mockEventDAO) Update(event *domain.Event) error {
-	for i, e := range m.events {
-		if e.ID == event.ID {
-			m.events[i] = event
+	for index, currentEvent := range m.events {
+		if currentEvent.ID == event.ID {
+			m.events[index] = event
 			return nil
 		}
 	}
@@ -49,9 +78,9 @@ func (m *mockEventDAO) Update(event *domain.Event) error {
 }
 
 func (m *mockEventDAO) Delete(id uint) error {
-	for i, e := range m.events {
-		if e.ID == id {
-			m.events = append(m.events[:i], m.events[i+1:]...)
+	for index, event := range m.events {
+		if event.ID == id {
+			m.events = append(m.events[:index], m.events[index+1:]...)
 			return nil
 		}
 	}
@@ -62,30 +91,32 @@ func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event,
 	if categoria == "" && buscar == "" {
 		return m.events, nil
 	}
-	var res []*domain.Event
-	for _, e := range m.events {
+
+	var response []*domain.Event
+	for _, event := range m.events {
 		match := true
-		if categoria != "" && e.Categoria != categoria {
+		if categoria != "" && event.Categoria != categoria {
 			match = false
 		}
 		if buscar != "" {
 			titleMatch := false
-			descMatch := false
-			if e.Titulo != "" {
-				titleMatch = strings.Contains(strings.ToLower(e.Titulo), strings.ToLower(buscar))
+			descriptionMatch := false
+			if event.Titulo != "" {
+				titleMatch = strings.Contains(strings.ToLower(event.Titulo), strings.ToLower(buscar))
 			}
-			if e.Descripcion != "" {
-				descMatch = strings.Contains(strings.ToLower(e.Descripcion), strings.ToLower(buscar))
+			if event.Descripcion != "" {
+				descriptionMatch = strings.Contains(strings.ToLower(event.Descripcion), strings.ToLower(buscar))
 			}
-			if !titleMatch && !descMatch {
+			if !titleMatch && !descriptionMatch {
 				match = false
 			}
 		}
 		if match {
-			res = append(res, e)
+			response = append(response, event)
 		}
 	}
-	return res, nil
+
+	return response, nil
 }
 
 func TestEventController(t *testing.T) {
@@ -95,43 +126,40 @@ func TestEventController(t *testing.T) {
 
 	mockDAO := &mockEventDAO{events: make([]*domain.Event, 0)}
 	eventService := services.NewEventService(mockDAO)
-	ctrl := NewEventController(eventService)
+	controller := NewEventController(eventService)
 
 	router := gin.Default()
-	router.GET("/events", ctrl.List)
-	router.GET("/events/:id", ctrl.GetByID)
+	router.GET("/events", controller.List)
+	router.GET("/events/:id", controller.GetByID)
 
-	// Setup JWT auth middleware on protected group
 	protected := router.Group("/")
 	protected.Use(middleware.AuthMiddleware())
 	{
 		adminOnly := protected.Group("/admin")
 		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
-			adminOnly.POST("/events", ctrl.Create)
-			adminOnly.PUT("/events/:id", ctrl.Update)
-			adminOnly.DELETE("/events/:id", ctrl.Delete)
+			adminOnly.GET("/dashboard", controller.GetAdminDashboardStats)
+			adminOnly.POST("/events", controller.Create)
+			adminOnly.PUT("/events/:id", controller.Update)
+			adminOnly.DELETE("/events/:id", controller.Delete)
 		}
 	}
 
-	// Helper to generate a valid admin token
 	adminToken, err := utils.GenerateToken(1, "administrador")
 	if err != nil {
 		t.Fatalf("Failed to generate token: %v", err)
 	}
 
-	// Helper to generate a client token
 	clientToken, err := utils.GenerateToken(2, "cliente")
 	if err != nil {
 		t.Fatalf("Failed to generate client token: %v", err)
 	}
 
-	// 1. Success: Admin creates valid event
 	futureDate := time.Now().Add(24 * time.Hour).Format("2006-01-02")
 	validEvent := domain.EventCreateDTO{
 		Titulo:      "Concierto de Rock",
 		Descripcion: "Un show espectacular",
-		Categoria:   "Música",
+		Categoria:   "Musica",
 		Fecha:       futureDate,
 		HoraInicio:  "21:00",
 		HoraFin:     "23:30",
@@ -147,30 +175,29 @@ func TestEventController(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, req)
+	responseRecorder := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder, req)
 
-	if w.Code != http.StatusCreated {
-		t.Errorf("Expected 201 Created, got %d. Body: %s", w.Code, w.Body.String())
-	}
-
-	var respEvent domain.EventResponseDTO
-	_ = json.Unmarshal(w.Body.Bytes(), &respEvent)
-
-	if respEvent.Titulo != "Concierto de Rock" {
-		t.Errorf("Expected title 'Concierto de Rock', got '%s'", respEvent.Titulo)
-	}
-	if respEvent.EntradasDisponibles != 500 {
-		t.Errorf("Expected EntradasDisponibles 500, got %d", respEvent.EntradasDisponibles)
-	}
-	if respEvent.Ubicacion != "Estadio Mario Alberto Kempes" {
-		t.Errorf("Expected Ubicacion 'Estadio Mario Alberto Kempes', got '%s'", respEvent.Ubicacion)
-	}
-	if respEvent.Precio != 1500.00 {
-		t.Errorf("Expected Precio 1500.00, got %f", respEvent.Precio)
+	if responseRecorder.Code != http.StatusCreated {
+		t.Errorf("Expected 201 Created, got %d. Body: %s", responseRecorder.Code, responseRecorder.Body.String())
 	}
 
-	// 2. Error: Required fields missing (empty title)
+	var responseEvent domain.EventResponseDTO
+	_ = json.Unmarshal(responseRecorder.Body.Bytes(), &responseEvent)
+
+	if responseEvent.Titulo != "Concierto de Rock" {
+		t.Errorf("Expected title 'Concierto de Rock', got '%s'", responseEvent.Titulo)
+	}
+	if responseEvent.EntradasDisponibles != 500 {
+		t.Errorf("Expected EntradasDisponibles 500, got %d", responseEvent.EntradasDisponibles)
+	}
+	if responseEvent.Ubicacion != "Estadio Mario Alberto Kempes" {
+		t.Errorf("Expected Ubicacion 'Estadio Mario Alberto Kempes', got '%s'", responseEvent.Ubicacion)
+	}
+	if responseEvent.Precio != 1500.00 {
+		t.Errorf("Expected Precio 1500.00, got %f", responseEvent.Precio)
+	}
+
 	invalidEventMissingFields := domain.EventCreateDTO{
 		Titulo:     "",
 		Fecha:      futureDate,
@@ -185,14 +212,13 @@ func TestEventController(t *testing.T) {
 	req2.Header.Set("Content-Type", "application/json")
 	req2.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w2 := httptest.NewRecorder()
-	router.ServeHTTP(w2, req2)
+	responseRecorder2 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder2, req2)
 
-	if w2.Code != http.StatusBadRequest {
-		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", w2.Code, w2.Body.String())
+	if responseRecorder2.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d. Body: %s", responseRecorder2.Code, responseRecorder2.Body.String())
 	}
 
-	// 3. Error: Past date
 	pastDate := time.Now().Add(-24 * time.Hour).Format("2006-01-02")
 	invalidEventPastDate := domain.EventCreateDTO{
 		Titulo:     "Evento del Pasado",
@@ -208,40 +234,37 @@ func TestEventController(t *testing.T) {
 	req3.Header.Set("Content-Type", "application/json")
 	req3.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w3 := httptest.NewRecorder()
-	router.ServeHTTP(w3, req3)
+	responseRecorder3 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder3, req3)
 
-	if w3.Code != http.StatusUnprocessableEntity {
-		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w3.Code, w3.Body.String())
+	if responseRecorder3.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", responseRecorder3.Code, responseRecorder3.Body.String())
 	}
 
-	// 4. Error: Unauthorized (no token)
 	req4, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body))
 	req4.Header.Set("Content-Type", "application/json")
 
-	w4 := httptest.NewRecorder()
-	router.ServeHTTP(w4, req4)
+	responseRecorder4 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder4, req4)
 
-	if w4.Code != http.StatusUnauthorized {
-		t.Errorf("Expected 401 Unauthorized, got %d. Body: %s", w4.Code, w4.Body.String())
+	if responseRecorder4.Code != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d. Body: %s", responseRecorder4.Code, responseRecorder4.Body.String())
 	}
 
-	// 5. Error: Forbidden (client role, not admin)
 	req5, _ := http.NewRequest("POST", "/admin/events", bytes.NewBuffer(body))
 	req5.Header.Set("Content-Type", "application/json")
 	req5.Header.Set("Authorization", "Bearer "+clientToken)
 
-	w5 := httptest.NewRecorder()
-	router.ServeHTTP(w5, req5)
+	responseRecorder5 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder5, req5)
 
-	if w5.Code != http.StatusForbidden {
-		t.Errorf("Expected 403 Forbidden, got %d. Body: %s", w5.Code, w5.Body.String())
+	if responseRecorder5.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d. Body: %s", responseRecorder5.Code, responseRecorder5.Body.String())
 	}
 
-	// 6. Seed another event to mock DAO directly for testing GET /events
 	theaterEvent := &domain.Event{
 		Titulo:      "Obra de Teatro",
-		Descripcion: "Comedia dramática en tres actos",
+		Descripcion: "Comedia dramatica en tres actos",
 		Categoria:   "Teatro",
 		Fecha:       futureDate,
 		HoraInicio:  "20:00",
@@ -252,105 +275,128 @@ func TestEventController(t *testing.T) {
 	}
 	_ = mockDAO.Create(theaterEvent)
 
-	// 7. GET /events (No filters)
 	req6, _ := http.NewRequest("GET", "/events", nil)
-	w6 := httptest.NewRecorder()
-	router.ServeHTTP(w6, req6)
+	responseRecorder6 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder6, req6)
 
-	if w6.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d. Body: %s", w6.Code, w6.Body.String())
+	if responseRecorder6.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", responseRecorder6.Code, responseRecorder6.Body.String())
 	}
 
 	var eventsAll []domain.EventResponseDTO
-	_ = json.Unmarshal(w6.Body.Bytes(), &eventsAll)
+	_ = json.Unmarshal(responseRecorder6.Body.Bytes(), &eventsAll)
 	if len(eventsAll) != 2 {
 		t.Errorf("Expected 2 events, got %d", len(eventsAll))
 	}
 
-	// 8. GET /events?categoria=Teatro (Filter by category)
-	req7, _ := http.NewRequest("GET", "/events?categoria=Teatro", nil)
-	w7 := httptest.NewRecorder()
-	router.ServeHTTP(w7, req7)
+	mockDAO.events[0].Tickets = []domain.Ticket{
+		{Estado: "activo"},
+		{Estado: "activo"},
+		{Estado: "cancelado"},
+	}
 
-	if w7.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d", w7.Code)
+	reqStats, _ := http.NewRequest("GET", "/admin/dashboard", nil)
+	reqStats.Header.Set("Authorization", "Bearer "+adminToken)
+
+	responseRecorderStats := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorderStats, reqStats)
+
+	if responseRecorderStats.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", responseRecorderStats.Code, responseRecorderStats.Body.String())
+	}
+
+	var statsResponse domain.AdminDashboardStatsDTO
+	_ = json.Unmarshal(responseRecorderStats.Body.Bytes(), &statsResponse)
+	if statsResponse.TotalEventos != 2 {
+		t.Errorf("Expected TotalEventos 2, got %d", statsResponse.TotalEventos)
+	}
+	if statsResponse.EntradasVendidas != 2 {
+		t.Errorf("Expected EntradasVendidas 2, got %d", statsResponse.EntradasVendidas)
+	}
+	if statsResponse.RecaudacionTotal != 3000 {
+		t.Errorf("Expected RecaudacionTotal 3000, got %f", statsResponse.RecaudacionTotal)
+	}
+	if statsResponse.OcupacionMedia <= 0 {
+		t.Errorf("Expected OcupacionMedia greater than 0, got %f", statsResponse.OcupacionMedia)
+	}
+
+	req7, _ := http.NewRequest("GET", "/events?categoria=Teatro", nil)
+	responseRecorder7 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder7, req7)
+
+	if responseRecorder7.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", responseRecorder7.Code)
 	}
 
 	var eventsTeatro []domain.EventResponseDTO
-	_ = json.Unmarshal(w7.Body.Bytes(), &eventsTeatro)
+	_ = json.Unmarshal(responseRecorder7.Body.Bytes(), &eventsTeatro)
 	if len(eventsTeatro) != 1 || eventsTeatro[0].Titulo != "Obra de Teatro" {
 		t.Errorf("Expected 1 event ('Obra de Teatro'), got %d", len(eventsTeatro))
 	}
 
-	// 9. GET /events?buscar=Rock (Filter by search keyword)
 	req8, _ := http.NewRequest("GET", "/events?buscar=Rock", nil)
-	w8 := httptest.NewRecorder()
-	router.ServeHTTP(w8, req8)
+	responseRecorder8 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder8, req8)
 
-	if w8.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d", w8.Code)
+	if responseRecorder8.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", responseRecorder8.Code)
 	}
 
 	var eventsRock []domain.EventResponseDTO
-	_ = json.Unmarshal(w8.Body.Bytes(), &eventsRock)
+	_ = json.Unmarshal(responseRecorder8.Body.Bytes(), &eventsRock)
 	if len(eventsRock) != 1 || eventsRock[0].Titulo != "Concierto de Rock" {
 		t.Errorf("Expected 1 event ('Concierto de Rock'), got %d", len(eventsRock))
 	}
 
-	// 10. GET /events?categoria=Música&buscar=Obra (Combined filtering, no match)
-	req9, _ := http.NewRequest("GET", "/events?categoria=M\u00fasica&buscar=Obra", nil)
-	w9 := httptest.NewRecorder()
-	router.ServeHTTP(w9, req9)
+	req9, _ := http.NewRequest("GET", "/events?categoria=Musica&buscar=Obra", nil)
+	responseRecorder9 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder9, req9)
 
-	if w9.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d", w9.Code)
+	if responseRecorder9.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", responseRecorder9.Code)
 	}
 
 	var eventsCombined []domain.EventResponseDTO
-	_ = json.Unmarshal(w9.Body.Bytes(), &eventsCombined)
+	_ = json.Unmarshal(responseRecorder9.Body.Bytes(), &eventsCombined)
 	if len(eventsCombined) != 0 {
 		t.Errorf("Expected 0 events, got %d", len(eventsCombined))
 	}
 
-	// 11. GET /events/1 (Success: single event by ID)
 	req10, _ := http.NewRequest("GET", "/events/1", nil)
-	w10 := httptest.NewRecorder()
-	router.ServeHTTP(w10, req10)
+	responseRecorder10 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder10, req10)
 
-	if w10.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d. Body: %s", w10.Code, w10.Body.String())
+	if responseRecorder10.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", responseRecorder10.Code, responseRecorder10.Body.String())
 	}
 
 	var eventDetail domain.EventResponseDTO
-	_ = json.Unmarshal(w10.Body.Bytes(), &eventDetail)
+	_ = json.Unmarshal(responseRecorder10.Body.Bytes(), &eventDetail)
 	if eventDetail.ID != 1 || eventDetail.Titulo != "Concierto de Rock" {
 		t.Errorf("Expected event with ID 1 and title 'Concierto de Rock', got ID %d and title '%s'", eventDetail.ID, eventDetail.Titulo)
 	}
 
-	// 12. GET /events/999 (Error: event not found)
 	req11, _ := http.NewRequest("GET", "/events/999", nil)
-	w11 := httptest.NewRecorder()
-	router.ServeHTTP(w11, req11)
+	responseRecorder11 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder11, req11)
 
-	if w11.Code != http.StatusNotFound {
-		t.Errorf("Expected 404 Not Found, got %d", w11.Code)
+	if responseRecorder11.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d", responseRecorder11.Code)
 	}
 
-	// 13. GET /events/abc (Error: invalid ID format)
 	req12, _ := http.NewRequest("GET", "/events/abc", nil)
-	w12 := httptest.NewRecorder()
-	router.ServeHTTP(w12, req12)
+	responseRecorder12 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder12, req12)
 
-	if w12.Code != http.StatusBadRequest {
-		t.Errorf("Expected 400 Bad Request, got %d", w12.Code)
+	if responseRecorder12.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", responseRecorder12.Code)
 	}
 
-	// 14. Success: update event 1 by admin
 	futureDateStr := time.Now().Add(48 * time.Hour).Format("2006-01-02")
 	updateDTO := domain.EventCreateDTO{
 		Titulo:      "Concierto de Rock Recargado",
-		Descripcion: "Nueva descripción para el concierto",
-		Categoria:   "Música",
+		Descripcion: "Nueva descripcion para el concierto",
+		Categoria:   "Musica",
 		Fecha:       futureDateStr,
 		HoraInicio:  "20:00",
 		HoraFin:     "23:00",
@@ -365,43 +411,39 @@ func TestEventController(t *testing.T) {
 	req14.Header.Set("Authorization", "Bearer "+adminToken)
 	req14.Header.Set("Content-Type", "application/json")
 
-	w14 := httptest.NewRecorder()
-	router.ServeHTTP(w14, req14)
+	responseRecorder14 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder14, req14)
 
-	if w14.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d. Body: %s", w14.Code, w14.Body.String())
+	if responseRecorder14.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", responseRecorder14.Code, responseRecorder14.Body.String())
 	}
 
-	// Verify update in DAO
 	if mockDAO.events[0].Titulo != "Concierto de Rock Recargado" || mockDAO.events[0].Capacidad != 200 {
 		t.Errorf("Expected title 'Concierto de Rock Recargado' and capacity 200, got '%s' and %d", mockDAO.events[0].Titulo, mockDAO.events[0].Capacidad)
 	}
 
-	// 15. Error: update event without admin token (e.g. client token)
 	req15, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyUpdate))
 	req15.Header.Set("Authorization", "Bearer "+clientToken)
 	req15.Header.Set("Content-Type", "application/json")
 
-	w15 := httptest.NewRecorder()
-	router.ServeHTTP(w15, req15)
+	responseRecorder15 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder15, req15)
 
-	if w15.Code != http.StatusForbidden {
-		t.Errorf("Expected 403 Forbidden, got %d", w15.Code)
+	if responseRecorder15.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", responseRecorder15.Code)
 	}
 
-	// 16. Error: update non-existent event
 	req16, _ := http.NewRequest("PUT", "/admin/events/999", bytes.NewBuffer(bodyUpdate))
 	req16.Header.Set("Authorization", "Bearer "+adminToken)
 	req16.Header.Set("Content-Type", "application/json")
 
-	w16 := httptest.NewRecorder()
-	router.ServeHTTP(w16, req16)
+	responseRecorder16 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder16, req16)
 
-	if w16.Code != http.StatusNotFound {
-		t.Errorf("Expected 404 Not Found, got %d", w16.Code)
+	if responseRecorder16.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d", responseRecorder16.Code)
 	}
 
-	// 17. Error: update event with past date
 	pastDateStr := time.Now().Add(-48 * time.Hour).Format("2006-01-02")
 	updatePastDTO := updateDTO
 	updatePastDTO.Fecha = pastDateStr
@@ -410,79 +452,72 @@ func TestEventController(t *testing.T) {
 	req17.Header.Set("Authorization", "Bearer "+adminToken)
 	req17.Header.Set("Content-Type", "application/json")
 
-	w17 := httptest.NewRecorder()
-	router.ServeHTTP(w17, req17)
+	responseRecorder17 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder17, req17)
 
-	if w17.Code != http.StatusUnprocessableEntity {
-		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w17.Code, w17.Body.String())
+	if responseRecorder17.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", responseRecorder17.Code, responseRecorder17.Body.String())
 	}
 
-	// 18. Error: update event capacity less than active sold tickets
-	// Inject 2 active tickets to event 1 in mockDAO
 	mockDAO.events[0].Tickets = []domain.Ticket{
 		{Estado: "activo"},
 		{Estado: "activo"},
 	}
 	updateLowCapDTO := updateDTO
-	updateLowCapDTO.Capacidad = 1 // Less than 2
+	updateLowCapDTO.Capacidad = 1
 	bodyLowCapUpdate, _ := json.Marshal(updateLowCapDTO)
 	req18, _ := http.NewRequest("PUT", "/admin/events/1", bytes.NewBuffer(bodyLowCapUpdate))
 	req18.Header.Set("Authorization", "Bearer "+adminToken)
 	req18.Header.Set("Content-Type", "application/json")
 
-	w18 := httptest.NewRecorder()
-	router.ServeHTTP(w18, req18)
+	responseRecorder18 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder18, req18)
 
-	if w18.Code != http.StatusUnprocessableEntity {
-		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", w18.Code, w18.Body.String())
+	if responseRecorder18.Code != http.StatusUnprocessableEntity {
+		t.Errorf("Expected 422 Unprocessable Entity, got %d. Body: %s", responseRecorder18.Code, responseRecorder18.Body.String())
 	}
 
-	// Clear injected tickets before delete test
 	mockDAO.events[0].Tickets = nil
 
-	// 19. Error: delete event without admin token
 	req19, _ := http.NewRequest("DELETE", "/admin/events/1", nil)
 	req19.Header.Set("Authorization", "Bearer "+clientToken)
 
-	w19 := httptest.NewRecorder()
-	router.ServeHTTP(w19, req19)
+	responseRecorder19 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder19, req19)
 
-	if w19.Code != http.StatusForbidden {
-		t.Errorf("Expected 403 Forbidden, got %d", w19.Code)
+	if responseRecorder19.Code != http.StatusForbidden {
+		t.Errorf("Expected 403 Forbidden, got %d", responseRecorder19.Code)
 	}
 
-	// 20. Error: delete non-existent event
 	req20, _ := http.NewRequest("DELETE", "/admin/events/999", nil)
 	req20.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w20 := httptest.NewRecorder()
-	router.ServeHTTP(w20, req20)
+	responseRecorder20 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder20, req20)
 
-	if w20.Code != http.StatusNotFound {
-		t.Errorf("Expected 404 Not Found, got %d. Body: %s", w20.Code, w20.Body.String())
+	if responseRecorder20.Code != http.StatusNotFound {
+		t.Errorf("Expected 404 Not Found, got %d. Body: %s", responseRecorder20.Code, responseRecorder20.Body.String())
 	}
 
-	// 21. Error: delete event with invalid ID
 	req21, _ := http.NewRequest("DELETE", "/admin/events/abc", nil)
 	req21.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w21 := httptest.NewRecorder()
-	router.ServeHTTP(w21, req21)
+	responseRecorder21 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder21, req21)
 
-	if w21.Code != http.StatusBadRequest {
-		t.Errorf("Expected 400 Bad Request, got %d", w21.Code)
+	if responseRecorder21.Code != http.StatusBadRequest {
+		t.Errorf("Expected 400 Bad Request, got %d", responseRecorder21.Code)
 	}
 
-	// 22. Success: admin deletes event 1
 	eventCountBefore := len(mockDAO.events)
 	req22, _ := http.NewRequest("DELETE", "/admin/events/1", nil)
 	req22.Header.Set("Authorization", "Bearer "+adminToken)
 
-	w22 := httptest.NewRecorder()
-	router.ServeHTTP(w22, req22)
+	responseRecorder22 := httptest.NewRecorder()
+	router.ServeHTTP(responseRecorder22, req22)
 
-	if w22.Code != http.StatusOK {
-		t.Errorf("Expected 200 OK, got %d. Body: %s", w22.Code, w22.Body.String())
+	if responseRecorder22.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d. Body: %s", responseRecorder22.Code, responseRecorder22.Body.String())
 	}
 
 	if len(mockDAO.events) != eventCountBefore-1 {

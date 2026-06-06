@@ -22,7 +22,7 @@ func NewEventController(eventService services.EventService) *EventController {
 	}
 }
 
-// Create maneja el endpoint de creación de un evento (POST /admin/events)
+// Create maneja el endpoint de creacion de un evento (POST /admin/events)
 func (ctrl *EventController) Create(c *gin.Context) {
 	var dto domain.EventCreateDTO
 	if err := c.ShouldBindJSON(&dto); err != nil {
@@ -58,7 +58,7 @@ func (ctrl *EventController) GetByID(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento invalido"})
 		return
 	}
 
@@ -71,12 +71,23 @@ func (ctrl *EventController) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// Update maneja el endpoint de actualización de un evento (PUT /admin/events/:id)
+// GetAdminDashboardStats maneja el endpoint para obtener las metricas del panel admin (GET /admin/dashboard)
+func (ctrl *EventController) GetAdminDashboardStats(c *gin.Context) {
+	res, err := ctrl.eventService.GetAdminDashboardStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
+}
+
+// Update maneja el endpoint de actualizacion de un evento (PUT /admin/events/:id)
 func (ctrl *EventController) Update(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento invalido"})
 		return
 	}
 
@@ -99,12 +110,12 @@ func (ctrl *EventController) Update(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
-// Delete maneja el endpoint de eliminación de un evento (DELETE /admin/events/:id)
+// Delete maneja el endpoint de eliminacion de un evento (DELETE /admin/events/:id)
 func (ctrl *EventController) Delete(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento inválido"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "ID de evento invalido"})
 		return
 	}
 
@@ -120,4 +131,3 @@ func (ctrl *EventController) Delete(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Evento eliminado exitosamente"})
 }
-

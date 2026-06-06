@@ -68,10 +68,11 @@ func InitDB() {
 	}
 	log.Println("¡Esquemas de la base de datos automigrados con éxito!")
 
-	// Migrate FK constraint from ON DELETE RESTRICT to ON DELETE SET NULL
+	// Mantiene event_id nullable y evita recrear la FK en cada arranque.
 	DB.Exec("ALTER TABLE tickets MODIFY COLUMN event_id BIGINT UNSIGNED NULL")
-	DB.Exec("ALTER TABLE tickets DROP FOREIGN KEY IF EXISTS fk_events_tickets")
-	DB.Exec("ALTER TABLE tickets DROP FOREIGN KEY IF EXISTS fk_tickets_event")
-	DB.Exec(`ALTER TABLE tickets ADD CONSTRAINT fk_events_tickets 
-		FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL ON UPDATE CASCADE`)
+	if !DB.Migrator().HasConstraint(&domain.Ticket{}, "fk_events_tickets") &&
+		!DB.Migrator().HasConstraint(&domain.Ticket{}, "fk_tickets_event") {
+		DB.Exec(`ALTER TABLE tickets ADD CONSTRAINT fk_events_tickets 
+			FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE SET NULL ON UPDATE CASCADE`)
+	}
 }

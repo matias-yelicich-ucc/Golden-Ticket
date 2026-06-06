@@ -14,6 +14,7 @@ type EventService interface {
 	CreateEvent(dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
 	GetAllEvents(categoria string, buscar string) ([]*domain.EventResponseDTO, error)
 	GetEventByID(id uint) (*domain.EventResponseDTO, error)
+	GetAdminDashboardStats() (*domain.AdminDashboardStatsDTO, error)
 	UpdateEvent(id uint, dto domain.EventCreateDTO) (*domain.EventResponseDTO, error)
 	DeleteEvent(id uint) error
 }
@@ -152,6 +153,11 @@ func (s *eventServiceImpl) GetEventByID(id uint) (*domain.EventResponseDTO, erro
 	return &response, nil
 }
 
+// GetAdminDashboardStats obtiene las metricas agregadas del panel de administracion
+func (s *eventServiceImpl) GetAdminDashboardStats() (*domain.AdminDashboardStatsDTO, error) {
+	return s.eventDAO.GetAdminDashboardStats()
+}
+
 // UpdateEvent actualiza un evento existente validando capacidad y fecha futura
 func (s *eventServiceImpl) UpdateEvent(id uint, dto domain.EventCreateDTO) (*domain.EventResponseDTO, error) {
 	// 1. Fetch event from DAO
@@ -232,4 +238,3 @@ func (s *eventServiceImpl) DeleteEvent(id uint) error {
 
 	return s.eventDAO.Delete(id)
 }
-
