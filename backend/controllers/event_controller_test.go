@@ -101,13 +101,21 @@ func (m *mockEventDAO) GetAll(categoria string, buscar string) ([]*domain.Event,
 		if buscar != "" {
 			titleMatch := false
 			descriptionMatch := false
+			categoryMatch := false
+			locationMatch := false
 			if event.Titulo != "" {
 				titleMatch = strings.Contains(strings.ToLower(event.Titulo), strings.ToLower(buscar))
 			}
 			if event.Descripcion != "" {
 				descriptionMatch = strings.Contains(strings.ToLower(event.Descripcion), strings.ToLower(buscar))
 			}
-			if !titleMatch && !descriptionMatch {
+			if event.Categoria != "" {
+				categoryMatch = strings.Contains(strings.ToLower(event.Categoria), strings.ToLower(buscar))
+			}
+			if event.Ubicacion != "" {
+				locationMatch = strings.Contains(strings.ToLower(event.Ubicacion), strings.ToLower(buscar))
+			}
+			if !titleMatch && !descriptionMatch && !categoryMatch && !locationMatch {
 				match = false
 			}
 		}
@@ -346,6 +354,32 @@ func TestEventController(t *testing.T) {
 	_ = json.Unmarshal(responseRecorder8.Body.Bytes(), &eventsRock)
 	if len(eventsRock) != 1 || eventsRock[0].Titulo != "Concierto de Rock" {
 		t.Errorf("Expected 1 event ('Concierto de Rock'), got %d", len(eventsRock))
+	}
+
+	// Test search by location (Kempes)
+	reqSearchLocation, _ := http.NewRequest("GET", "/events?buscar=Kempes", nil)
+	recSearchLocation := httptest.NewRecorder()
+	router.ServeHTTP(recSearchLocation, reqSearchLocation)
+	if recSearchLocation.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", recSearchLocation.Code)
+	}
+	var eventsLocation []domain.EventResponseDTO
+	_ = json.Unmarshal(recSearchLocation.Body.Bytes(), &eventsLocation)
+	if len(eventsLocation) != 1 || eventsLocation[0].Titulo != "Concierto de Rock" {
+		t.Errorf("Expected 1 event ('Concierto de Rock') when searching by location, got %d", len(eventsLocation))
+	}
+
+	// Test search by category (Teatro)
+	reqSearchCategory, _ := http.NewRequest("GET", "/events?buscar=Teatro", nil)
+	recSearchCategory := httptest.NewRecorder()
+	router.ServeHTTP(recSearchCategory, reqSearchCategory)
+	if recSearchCategory.Code != http.StatusOK {
+		t.Errorf("Expected 200 OK, got %d", recSearchCategory.Code)
+	}
+	var eventsCategory []domain.EventResponseDTO
+	_ = json.Unmarshal(recSearchCategory.Body.Bytes(), &eventsCategory)
+	if len(eventsCategory) != 1 || eventsCategory[0].Titulo != "Obra de Teatro" {
+		t.Errorf("Expected 1 event ('Obra de Teatro') when searching by category, got %d", len(eventsCategory))
 	}
 
 	req9, _ := http.NewRequest("GET", "/events?categoria=Musica&buscar=Obra", nil)
