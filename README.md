@@ -191,7 +191,7 @@ npm run lint
 
 El diagrama se encuentra dentro de `docs/database-diagram.svg` y resume las entidades principales y sus relaciones.
 
-![Diagrama de base de datos](docs/database-diagram.svg)
+![Diagrama de base de datos](docs/database-diagram.png)
 
 ## Decisiones de diseño
 
