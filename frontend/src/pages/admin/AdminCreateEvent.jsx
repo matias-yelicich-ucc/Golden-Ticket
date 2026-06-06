@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import '../../styles/App.css';
-import { adminCategories } from '../../constants/admin';
 import { createEvent, updateEvent, getEventByID } from '../../services/api/client';
 
 const ImageIcon = () => (
@@ -79,6 +78,7 @@ const createInitialForm = () => ({
 });
 
 const MAX_CAPACITY_DIGITS = 7;
+const ADMIN_CATEGORIES = ['Musica', 'Deportes', 'Teatro', 'Charlas', 'Cursos', 'E-Sports', 'Comedia'];
 
 function AdminCreateEvent() {
   const { id } = useParams();
@@ -298,7 +298,7 @@ function AdminCreateEvent() {
               </button>
               {isCategoryOpen && (
                 <div className="admin-custom-select-menu" role="listbox" aria-labelledby="event-category">
-                  {adminCategories.map((category) => (
+                  {ADMIN_CATEGORIES.map((category) => (
                     <button
                       key={category}
                       type="button"
