@@ -82,6 +82,18 @@ const ArrowLeftIcon = () => (
   </svg>
 );
 
+const formatArgDate = (value) => {
+  if (!value) return 'Fecha pendiente';
+  const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+};
+
 function MyTickets() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
@@ -256,7 +268,7 @@ function MyTickets() {
                   <h3>{ticket.event?.titulo || 'Evento Desconocido'}</h3>
                   <div className="ticket-history-detail-row">
                     <CalendarIcon />
-                    <span>{ticket.event?.fecha || 'Fecha pendiente'} — {ticket.event?.hora_inicio || ''}</span>
+                    <span>{formatArgDate(ticket.event?.fecha)} — {ticket.event?.hora_inicio || ''}</span>
                   </div>
                   <div className="ticket-history-detail-row">
                     <PinIcon />
@@ -400,7 +412,7 @@ function MyTickets() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.9rem', color: '#c4bcae' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <CalendarIcon />
-                  <span>{selectedTicket.event?.fecha || 'Fecha pendiente'} — {selectedTicket.event?.hora_inicio || ''}</span>
+                  <span>{formatArgDate(selectedTicket.event?.fecha)} — {selectedTicket.event?.hora_inicio || ''}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <PinIcon />

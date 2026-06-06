@@ -63,6 +63,18 @@ const slugify = (title, id) => {
   return `${clean}-${id}`;
 };
 
+const formatArgDate = (value) => {
+  if (!value) return 'Fecha pendiente';
+  const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+};
+
 const normalizeEvent = (dbEvent) => {
   const isSoldOut = dbEvent.entradas_disponibles === 0;
   return {
@@ -71,7 +83,7 @@ const normalizeEvent = (dbEvent) => {
     title: dbEvent.titulo,
     description: [dbEvent.descripcion || 'Sin descripciÃ³n.'],
     category: dbEvent.categoria || 'MÃºsica',
-    date: dbEvent.fecha,
+    date: formatArgDate(dbEvent.fecha),
     fullDate: dbEvent.fecha,
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
     location: dbEvent.ubicacion,
