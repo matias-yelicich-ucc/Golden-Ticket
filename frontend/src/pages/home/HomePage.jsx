@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
 import { getEvents } from '../../services/api/client';
@@ -63,6 +63,13 @@ const slugify = (title, id) => {
   return `${clean}-${id}`;
 };
 
+const formatCurrency = (value) =>
+  value.toLocaleString('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  });
+
 const formatArgDate = (value) => {
   if (!value) return 'Fecha pendiente';
   const normalized = value.includes('T') ? value : `${value}T00:00:00`;
@@ -81,8 +88,8 @@ const normalizeEvent = (dbEvent) => {
     id: dbEvent.id,
     slug: slugify(dbEvent.titulo, dbEvent.id),
     title: dbEvent.titulo,
-    description: [dbEvent.descripcion || 'Sin descripciÃ³n.'],
-    category: dbEvent.categoria || 'MÃºsica',
+    description: [dbEvent.descripcion || 'Sin descripción.'],
+    category: dbEvent.categoria || 'Música',
     date: formatArgDate(dbEvent.fecha),
     fullDate: dbEvent.fecha,
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
@@ -92,8 +99,8 @@ const normalizeEvent = (dbEvent) => {
     entradas_disponibles: dbEvent.entradas_disponibles,
     soldOut: isSoldOut,
     badge: isSoldOut ? 'AGOTADO' : '',
-    price: '$5.000',
-    numericPrice: 5000,
+    price: formatCurrency(dbEvent.precio || 0),
+    numericPrice: dbEvent.precio || 0,
     tickets: [
       {
         name: 'Entrada General',
@@ -102,6 +109,38 @@ const normalizeEvent = (dbEvent) => {
     ],
     urlImagen: dbEvent.url_imagen,
   };
+};
+
+const SortIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '16px', height: '16px', strokeWidth: '2', display: 'inline-block', verticalAlign: 'middle' }}>
+    <path d="m15 9-3-3-3 3M9 15l3 3 3-3" />
+  </svg>
+);
+
+const SortArrow = ({ order }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" style={{ width: '16px', height: '16px', strokeWidth: '2.5', display: 'inline-block', verticalAlign: 'middle', transform: order === 'desc' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+    <path d="m18 15-6-6-6 6" />
+  </svg>
+);
+
+const getSortableDate = (event) => {
+  const raw = event.fullDate || '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return new Date(raw + 'T00:00:00').getTime();
+  }
+  const match = raw.match(/^(\d{1,2})\s+([a-zA-Z]{3})/);
+  if (match) {
+    const day = parseInt(match[1], 10);
+    const monthStr = match[2].toLowerCase();
+    const months = {
+      ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5,
+      jul: 6, ago: 7, sep: 8, oct: 9, nov: 10, dic: 11
+    };
+    const month = months[monthStr] !== undefined ? months[monthStr] : 0;
+    return new Date(2026, month, day).getTime();
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
 };
 
 const EventCard = ({ event }) => (
@@ -155,6 +194,39 @@ function HelloWorld() {
   const navigate = useNavigate();
   const isAuthenticated = Boolean(localStorage.getItem('token'));
   const profileMenuRef = useRef(null);
+
+  const [sortBy, setSortBy] = useState('fecha');
+  const [sortOrder, setSortOrder] = useState('asc');
+
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder((curr) => (curr === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedEvents = useMemo(() => {
+    const list = [...events];
+    list.sort((a, b) => {
+      let valA, valB;
+      if (sortBy === 'fecha') {
+        valA = getSortableDate(a);
+        valB = getSortableDate(b);
+      } else if (sortBy === 'precio') {
+        valA = a.numericPrice || 0;
+        valB = b.numericPrice || 0;
+      } else {
+        return 0;
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return list;
+  }, [events, sortBy, sortOrder]);
 
   // Fetch full categories list and initial events once
   useEffect(() => {
@@ -343,12 +415,34 @@ function HelloWorld() {
 
       <section className="events-section">
         <h2>Catalogo de eventos</h2>
-        <div className="category-filters events-category-filters" aria-label="Filtros de eventos">
-          {allCategories.map((item) => (
-            <button className={item === category ? 'active' : ''} key={item} type="button" onClick={() => handleCategoryChange(item)}>
-              {item}
+        <div className="filter-bar">
+          <div className="category-filters events-category-filters" aria-label="Filtros de eventos">
+            {allCategories.map((item) => (
+              <button className={item === category ? 'active' : ''} key={item} type="button" onClick={() => handleCategoryChange(item)}>
+                {item}
+              </button>
+            ))}
+          </div>
+
+          <div className="sorting-controls">
+            <span className="sorting-label">Ordenar por:</span>
+            <button
+              className={`sort-btn ${sortBy === 'fecha' ? 'active' : ''}`}
+              type="button"
+              onClick={() => handleSort('fecha')}
+            >
+              Fecha
+              {sortBy === 'fecha' ? <SortArrow order={sortOrder} /> : <SortIcon />}
             </button>
-          ))}
+            <button
+              className={`sort-btn ${sortBy === 'precio' ? 'active' : ''}`}
+              type="button"
+              onClick={() => handleSort('precio')}
+            >
+              Precio
+              {sortBy === 'precio' ? <SortArrow order={sortOrder} /> : <SortIcon />}
+            </button>
+          </div>
         </div>
         {loading ? (
           <p className="empty-state">Cargando eventos...</p>
@@ -358,7 +452,7 @@ function HelloWorld() {
           <p className="empty-state">No hay eventos para ese filtro.</p>
         ) : (
           <div className="events-grid">
-            {events.map((event) => (
+            {sortedEvents.map((event) => (
               <EventCard event={event} key={event.id} />
             ))}
           </div>

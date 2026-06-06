@@ -38,7 +38,7 @@ func (d *eventDAOImpl) GetAll(categoria string, buscar string) ([]*domain.Event,
 		query = query.Where("categoria = ?", categoria)
 	}
 	if buscar != "" {
-		query = query.Where("titulo LIKE ? OR descripcion LIKE ?", "%"+buscar+"%", "%"+buscar+"%")
+		query = query.Where("titulo LIKE ? OR descripcion LIKE ? OR categoria LIKE ? OR ubicacion LIKE ?", "%"+buscar+"%", "%"+buscar+"%", "%"+buscar+"%", "%"+buscar+"%")
 	}
 	err := query.Find(&events).Error
 	return events, err
