@@ -26,19 +26,30 @@ func getJWTSecret() []byte {
 
 // GenerateToken creates a signed JWT with user details
 func GenerateToken(userID uint, rol string) (string, error) {
-	expHoursStr := os.Getenv("JWT_EXPIRATION_HOURS")
-	expHours := 24
-	if expHoursStr != "" {
-		if hours, err := strconv.Atoi(expHoursStr); err == nil {
-			expHours = hours
+	var expiration time.Duration
+	expMinutesStr := os.Getenv("JWT_EXPIRATION_MINUTES")
+	if expMinutesStr != "" {
+		if minutes, err := strconv.Atoi(expMinutesStr); err == nil {
+			expiration = time.Duration(minutes) * time.Minute
 		}
+	}
+
+	if expiration == 0 {
+		expHoursStr := os.Getenv("JWT_EXPIRATION_HOURS")
+		expHours := 24
+		if expHoursStr != "" {
+			if hours, err := strconv.Atoi(expHoursStr); err == nil {
+				expHours = hours
+			}
+		}
+		expiration = time.Duration(expHours) * time.Hour
 	}
 
 	claims := JWTClaims{
 		UserID: userID,
 		Rol:    rol,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(expHours) * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}

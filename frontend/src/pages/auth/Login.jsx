@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Login.css';
 import { loginUser } from '../../services/api/client';
@@ -34,6 +34,13 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [generalError, setGeneralError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === 'true') {
+      setGeneralError('Su sesión ha expirado. Debe iniciar nuevamente');
+    }
+  }, []);
 
   const validateForm = () => {
     const nextErrors = {};

@@ -29,7 +29,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		tokenStr := parts[1]
 		claims, err := utils.ValidateToken(tokenStr)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Su sesión ha expirado. Debe iniciar nuevamente"})
 			c.Abort()
 			return
 		}
