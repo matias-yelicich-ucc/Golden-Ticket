@@ -14,6 +14,23 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      const isLoginRequest = error.config.url.endsWith('/login');
+      if (!isLoginRequest) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        if (!window.location.pathname.endsWith('/login')) {
+          window.location.href = '/login?expired=true';
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const loginUser = (payload) => api.post('/login', payload);
 export const registerUser = (payload) => api.post('/register', payload);
 export const getAdminDashboardStats = () => api.get('/dashboard-stats');
