@@ -11,6 +11,7 @@ type EventDAO interface {
 	Create(event *domain.Event) error
 	GetAll(categoria string, buscar string) ([]*domain.Event, error)
 	GetByID(id uint) (*domain.Event, error)
+	GetAdminDashboardStats() (*domain.AdminDashboardStatsDTO, error)
 	Update(event *domain.Event) error
 	Delete(id uint) error
 }
@@ -48,6 +49,49 @@ func (d *eventDAOImpl) Create(event *domain.Event) error {
 	return DB.Create(event).Error
 }
 
+// GetAdminDashboardStats obtiene las metricas agregadas del panel de administracion
+func (d *eventDAOImpl) GetAdminDashboardStats() (*domain.AdminDashboardStatsDTO, error) {
+	var totalEventos int64
+	if err := DB.Model(&domain.Event{}).Count(&totalEventos).Error; err != nil {
+		return nil, err
+	}
+
+	var entradasVendidas int64
+	if err := DB.Model(&domain.Ticket{}).
+		Where("estado = ? AND event_id IS NOT NULL", "activo").
+		Count(&entradasVendidas).Error; err != nil {
+		return nil, err
+	}
+
+	var capacidadTotal int64
+	if err := DB.Model(&domain.Event{}).
+		Select("COALESCE(SUM(capacidad), 0)").
+		Scan(&capacidadTotal).Error; err != nil {
+		return nil, err
+	}
+
+	var recaudacionTotal float64
+	if err := DB.Model(&domain.Ticket{}).
+		Joins("JOIN events ON events.id = tickets.event_id").
+		Where("tickets.estado = ? AND tickets.event_id IS NOT NULL", "activo").
+		Select("COALESCE(SUM(events.precio), 0)").
+		Scan(&recaudacionTotal).Error; err != nil {
+		return nil, err
+	}
+
+	ocupacionMedia := 0.0
+	if capacidadTotal > 0 {
+		ocupacionMedia = (float64(entradasVendidas) / float64(capacidadTotal)) * 100
+	}
+
+	return &domain.AdminDashboardStatsDTO{
+		TotalEventos:     int(totalEventos),
+		EntradasVendidas: int(entradasVendidas),
+		OcupacionMedia:   ocupacionMedia,
+		RecaudacionTotal: recaudacionTotal,
+	}, nil
+}
+
 func (d *eventDAOImpl) Update(event *domain.Event) error {
 	return DB.Save(event).Error
 }
@@ -72,6 +116,3 @@ func (d *eventDAOImpl) Delete(id uint) error {
 		return tx.Delete(&domain.Event{}, id).Error
 	})
 }
-
-
-

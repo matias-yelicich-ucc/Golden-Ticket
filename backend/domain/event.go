@@ -52,3 +52,11 @@ type EventResponseDTO struct {
 	EntradasDisponibles int     `json:"entradas_disponibles"`
 	Precio              float64 `json:"precio"`
 }
+
+// AdminDashboardStatsDTO representa las metricas agregadas del panel de administracion
+type AdminDashboardStatsDTO struct {
+	TotalEventos     int     `json:"total_eventos"`
+	EntradasVendidas int     `json:"entradas_vendidas"`
+	OcupacionMedia   float64 `json:"ocupacion_media"`
+	RecaudacionTotal float64 `json:"recaudacion_total"`
+}

@@ -59,6 +59,7 @@ func main() {
 	r.POST("/login", authController.Login)
 	r.GET("/events", eventController.List)
 	r.GET("/events/:id", eventController.GetByID)
+	r.GET("/dashboard-stats", eventController.GetAdminDashboardStats)
 
 	// Protected routes (to verify JWT and roles middleware)
 	protected := r.Group("/")
@@ -80,16 +81,11 @@ func main() {
 		protected.POST("/my-tickets/:id/cancel", ticketController.Cancel)
 		protected.DELETE("/my-tickets/:id", ticketController.Cancel)
 
-
 		// Admin-only test route
 		adminOnly := protected.Group("/admin")
 		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
-			adminOnly.GET("/dashboard", func(c *gin.Context) {
-				c.JSON(http.StatusOK, gin.H{
-					"message": "Welcome to the Admin Dashboard",
-				})
-			})
+			adminOnly.GET("/dashboard", eventController.GetAdminDashboardStats)
 			adminOnly.POST("/events", eventController.Create)
 			adminOnly.PUT("/events/:id", eventController.Update)
 			adminOnly.DELETE("/events/:id", eventController.Delete)

@@ -1,8 +1,7 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/App.css';
-import { adminMetrics } from '../../constants/admin';
-import { getEvents, deleteEvent } from '../../services/api/client';
+import { getAdminDashboardStats, getEvents, deleteEvent } from '../../services/api/client';
 
 const iconMap = {
   calendar: (
@@ -50,8 +49,40 @@ const TrashIcon = () => (
   </svg>
 );
 
+const buildMetrics = (stats) => [
+  {
+    id: 'events',
+    label: 'Total eventos',
+    value: String(stats.total_eventos ?? 0),
+    icon: 'calendar',
+  },
+  {
+    id: 'tickets',
+    label: 'Entradas vendidas',
+    value: new Intl.NumberFormat('es-AR').format(stats.entradas_vendidas ?? 0),
+    icon: 'ticket',
+  },
+  {
+    id: 'occupancy',
+    label: 'Ocupacion media',
+    value: `${Math.round(stats.ocupacion_media ?? 0)}%`,
+    icon: 'users',
+  },
+  {
+    id: 'revenue',
+    label: 'Recaudacion',
+    value: new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      maximumFractionDigits: 0,
+    }).format(stats.recaudacion_total ?? 0),
+    icon: 'wallet',
+  },
+];
+
 function AdminDashboard() {
   const [events, setEvents] = useState([]);
+  const [metrics, setMetrics] = useState(buildMetrics({}));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -63,6 +94,15 @@ function AdminDashboard() {
   });
 
   useEffect(() => {
+    getAdminDashboardStats()
+      .then((response) => {
+        setMetrics(buildMetrics(response.data || {}));
+      })
+      .catch((err) => {
+        console.error('Error fetching admin dashboard stats:', err);
+        setMetrics(buildMetrics({}));
+      });
+
     getEvents()
       .then((response) => {
         setEvents(response.data || []);
@@ -120,7 +160,7 @@ function AdminDashboard() {
     setDeleteModal((prev) => ({ ...prev, loading: true, error: '' }));
     try {
       await deleteEvent(deleteModal.event.id);
-      setEvents((prev) => prev.filter((e) => e.id !== deleteModal.event.id));
+      setEvents((prev) => prev.filter((eventItem) => eventItem.id !== deleteModal.event.id));
       setDeleteModal({ isOpen: false, event: null, loading: false, error: '' });
     } catch (err) {
       const msg = err.response?.data?.error || 'Error al eliminar el evento.';
@@ -142,196 +182,195 @@ function AdminDashboard() {
 
   return (
     <>
-    <main className="admin-page">
-      <header className="event-detail-topbar">
-        <Link className="event-detail-brand" to="/">Golden Ticket</Link>
-        <div className="event-detail-actions">
-          <Link className="admin-topbar-cta" to="/admin/eventos/nuevo">+ Crear evento</Link>
-          <button type="button" onClick={handleLogout}>Cerrar sesion</button>
-        </div>
-      </header>
-
-      <section className="admin-shell">
-        <div className="admin-heading">
-          <div>
-            <span className="admin-kicker">Panel de administracion</span>
+      <main className="admin-page">
+        <header className="event-detail-topbar">
+          <Link className="event-detail-brand" to="/">Golden Ticket</Link>
+          <div className="event-detail-actions">
+            <Link className="admin-topbar-cta" to="/admin/eventos/nuevo">+ Crear evento</Link>
+            <button type="button" onClick={handleLogout}>Cerrar sesion</button>
           </div>
-        </div>
+        </header>
 
-        <section className="admin-metrics-grid">
-          {adminMetrics.map((metric) => (
-            <article className="admin-metric-card" key={metric.id}>
-              <div className="admin-metric-top">
-                <span className="admin-metric-icon">{iconMap[metric.icon]}</span>
-              </div>
-              <span className="admin-metric-label">{metric.label}</span>
-              <strong>{metric.value}</strong>
-            </article>
-          ))}
-        </section>
-
-        <section className="admin-table-card">
-          <div className="admin-table-header">
+        <section className="admin-shell">
+          <div className="admin-heading">
             <div>
-              <h2>Eventos proximos</h2>
+              <span className="admin-kicker">Panel de administracion</span>
             </div>
           </div>
 
-          <div className="admin-table">
-            <div className="admin-table-head">
-              <span>Titulo</span>
-              <span>Fecha</span>
-              <span>Cupo</span>
-              <span>Vendidas</span>
-              <span>Estado</span>
-              <span>Acciones</span>
+          <section className="admin-metrics-grid">
+            {metrics.map((metric) => (
+              <article className="admin-metric-card" key={metric.id}>
+                <div className="admin-metric-top">
+                  <span className="admin-metric-icon">{iconMap[metric.icon]}</span>
+                </div>
+                <span className="admin-metric-label">{metric.label}</span>
+                <strong>{metric.value}</strong>
+              </article>
+            ))}
+          </section>
+
+          <section className="admin-table-card">
+            <div className="admin-table-header">
+              <div>
+                <h2>Eventos proximos</h2>
+              </div>
             </div>
 
-            {loading && <p className="empty-state">Cargando eventos...</p>}
-            {error && <p className="empty-state" style={{ color: '#ff6b6b' }}>{error}</p>}
-            {!loading && !error && events.length === 0 && (
-              <div className="admin-empty-state">
-                <p>No hay eventos creados. Crea el primero para comenzar.</p>
+            <div className="admin-table">
+              <div className="admin-table-head">
+                <span>Titulo</span>
+                <span>Fecha</span>
+                <span>Cupo</span>
+                <span>Vendidas</span>
+                <span>Estado</span>
+                <span>Acciones</span>
               </div>
+
+              {loading && <p className="empty-state">Cargando eventos...</p>}
+              {error && <p className="empty-state" style={{ color: '#ff6b6b' }}>{error}</p>}
+              {!loading && !error && events.length === 0 && (
+                <div className="admin-empty-state">
+                  <p>No hay eventos creados. Crea el primero para comenzar.</p>
+                </div>
+              )}
+
+              {!loading && !error && events.map((event) => {
+                const sold = event.capacidad - event.entradas_disponibles;
+                const fill = event.capacidad > 0 ? (sold / event.capacidad) * 100 : 0;
+                const isSoldOut = event.entradas_disponibles === 0;
+                const status = isSoldOut ? 'Agotado' : 'Activo';
+                const statusTone = isSoldOut ? 'danger' : 'success';
+
+                return (
+                  <article className="admin-table-row" key={event.id}>
+                    <div className="admin-event-main">
+                      <div
+                        className="admin-event-thumb"
+                        style={event.url_imagen ? {
+                          backgroundImage: `url(${event.url_imagen})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        } : {}}
+                      />
+                      <div>
+                        <strong>{event.titulo}</strong>
+                        <p>{event.ubicacion}</p>
+                      </div>
+                    </div>
+                    <span className="admin-table-cell">{event.fecha} {event.hora_inicio}</span>
+                    <span className="admin-table-cell">{event.capacidad}</span>
+                    <div className="admin-sales-cell">
+                      <span>{sold}</span>
+                      <div className="admin-progress">
+                        <span style={{ width: `${fill}%` }} />
+                      </div>
+                    </div>
+                    <span className={`admin-status admin-status-${statusTone}`}>{status}</span>
+                    <div className="admin-actions-cell">
+                      <Link className="admin-action-button" to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
+                        <PencilIcon />
+                      </Link>
+                      <button className="admin-action-button" type="button" aria-label={`Eliminar ${event.titulo}`} onClick={() => handleDeleteClick(event)}>
+                        <TrashIcon />
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </section>
+      </main>
+
+      {deleteModal.isOpen && deleteModal.event && (
+        <div className="modal-overlay" onClick={handleDeleteClose}>
+          <div
+            className="modal-content"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: 'linear-gradient(135deg, #1f1d1a 0%, #0c0b0a 100%)',
+              border: '2px solid #d4af37',
+              padding: '32px 28px',
+              borderRadius: '20px',
+              width: 'min(460px, 95%)',
+              boxShadow: '0 24px 70px rgba(0, 0, 0, 0.9)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                background: 'rgba(239, 68, 68, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+              >
+                <svg viewBox="0 0 24 24" style={{ width: '28px', height: '28px', fill: 'none', stroke: '#ef4444', strokeWidth: '2' }}>
+                  <path d="M3 6h18" />
+                  <path d="M8 6V4h8v2" />
+                  <path d="M19 6v14H5V6" />
+                  <path d="M10 11v6" />
+                  <path d="M14 11v6" />
+                </svg>
+              </div>
+              <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancelar evento</h3>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                Estas por cancelar <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
+                Todas las entradas activas seran canceladas y el dinero sera reintegrado a los compradores.
+                Esta accion no se puede deshacer.
+              </p>
+            </div>
+
+            {deleteModal.error && (
+              <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '12px' }}>{deleteModal.error}</p>
             )}
 
-            {!loading && !error && events.map((event) => {
-              const sold = event.capacidad - event.entradas_disponibles;
-              const fill = event.capacidad > 0 ? (sold / event.capacidad) * 100 : 0;
-              const isSoldOut = event.entradas_disponibles === 0;
-              const status = isSoldOut ? 'Agotado' : 'Activo';
-              const statusTone = isSoldOut ? 'danger' : 'success';
-
-              return (
-                <article className="admin-table-row" key={event.id}>
-                  <div className="admin-event-main">
-                    <div 
-                      className="admin-event-thumb" 
-                      style={event.url_imagen ? { 
-                        backgroundImage: `url(${event.url_imagen})`, 
-                        backgroundSize: 'cover', 
-                        backgroundPosition: 'center' 
-                      } : {}}
-                    />
-                    <div>
-                      <strong>{event.titulo}</strong>
-                      <p>{event.ubicacion}</p>
-                    </div>
-                  </div>
-                  <span className="admin-table-cell">{event.fecha} {event.hora_inicio}</span>
-                  <span className="admin-table-cell">{event.capacidad}</span>
-                  <div className="admin-sales-cell">
-                    <span>{sold}</span>
-                    <div className="admin-progress">
-                      <span style={{ width: `${fill}%` }} />
-                    </div>
-                  </div>
-                  <span className={`admin-status admin-status-${statusTone}`}>{status}</span>
-                  <div className="admin-actions-cell">
-                    <Link className="admin-action-button" to={`/admin/eventos/${event.id}/editar`} aria-label={`Editar ${event.titulo}`}>
-                      <PencilIcon />
-                    </Link>
-                    <button className="admin-action-button" type="button" aria-label={`Eliminar ${event.titulo}`} onClick={() => handleDeleteClick(event)}>
-                      <TrashIcon />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        </section>
-      </section>
-    </main>
-
-    {/* Delete confirmation modal */}
-    {deleteModal.isOpen && deleteModal.event && (
-      <div className="modal-overlay" onClick={handleDeleteClose}>
-        <div
-          className="modal-content"
-          onClick={(e) => e.stopPropagation()}
-          style={{
-            background: 'linear-gradient(135deg, #1f1d1a 0%, #0c0b0a 100%)',
-            border: '2px solid #d4af37',
-            padding: '32px 28px',
-            borderRadius: '20px',
-            width: 'min(460px, 95%)',
-            boxShadow: '0 24px 70px rgba(0, 0, 0, 0.9)',
-            textAlign: 'center',
-          }}
-        >
-          <div style={{ marginBottom: '20px' }}>
-            <div style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-            }}>
-              <svg viewBox="0 0 24 24" style={{ width: '28px', height: '28px', fill: 'none', stroke: '#ef4444', strokeWidth: '2' }}>
-                <path d="M3 6h18" />
-                <path d="M8 6V4h8v2" />
-                <path d="M19 6v14H5V6" />
-                <path d="M10 11v6" />
-                <path d="M14 11v6" />
-              </svg>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleDeleteClose}
+                disabled={deleteModal.loading}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
+                  fontSize: '0.95rem',
+                }}
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={deleteModal.loading}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: deleteModal.loading ? '#666' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+                  color: '#fff',
+                  cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '0.95rem',
+                }}
+              >
+                {deleteModal.loading ? 'Cancelando...' : 'Si, cancelar evento'}
+              </button>
             </div>
-            <h3 style={{ color: '#fff', fontSize: '1.3rem', marginBottom: '8px' }}>Cancelar evento</h3>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.95rem', lineHeight: '1.5' }}>
-              EstÃ¡s por cancelar <strong style={{ color: '#d4af37' }}>{deleteModal.event.titulo}</strong>.
-              Todas las entradas activas serÃ¡n canceladas y el dinero serÃ¡ reintegrado a los compradores.
-              Esta acciÃ³n no se puede deshacer.
-            </p>
-          </div>
-
-          {deleteModal.error && (
-            <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: '12px' }}>{deleteModal.error}</p>
-          )}
-
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={handleDeleteClose}
-              disabled={deleteModal.loading}
-              style={{
-                padding: '10px 24px',
-                borderRadius: '10px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                background: 'rgba(255,255,255,0.05)',
-                color: '#fff',
-                cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
-                fontSize: '0.95rem',
-              }}
-            >
-              Volver
-            </button>
-            <button
-              type="button"
-              onClick={handleDeleteConfirm}
-              disabled={deleteModal.loading}
-              style={{
-                padding: '10px 24px',
-                borderRadius: '10px',
-                border: 'none',
-                background: deleteModal.loading ? '#666' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                color: '#fff',
-                cursor: deleteModal.loading ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                fontSize: '0.95rem',
-              }}
-            >
-              {deleteModal.loading ? 'Cancelando...' : 'SÃ­, cancelar evento'}
-            </button>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 }
 
 export default AdminDashboard;
-
