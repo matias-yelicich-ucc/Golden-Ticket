@@ -2,6 +2,11 @@
 
 Golden Ticket es una plataforma web para gestion de eventos y entradas, pensada para cubrir tanto la experiencia del cliente como la operacion administrativa. El sistema permite explorar eventos, comprar y gestionar entradas, y al mismo tiempo brinda un panel de administracion para crear eventos, editar su informacion y consultar metricas de ventas y ocupacion.
 
+# Integrantes
+- Baudino, José
+- Romanutti, Andrés
+- Yelicich. Matías
+
 ## Tabla de contenidos
 
 - [Descripcion general](#descripcion-general)
@@ -33,21 +38,31 @@ Flujos principales implementados:
 
 Las siguientes vistas de referencia se encuentran versionadas dentro de `docs/screenshots/`:
 
+### Auth
+
+![Signin](docs/screenshots/screenshot_signin.png)
+
+![Sign](docs/screenshots/screenshot_signup.png)
+
 ### Home
 
-![Home](docs/screenshots/home-screen.svg)
+![Home](docs/screenshots/screenshot_home.png)
 
 ### Detalle de evento
 
-![Detalle de evento](docs/screenshots/event-detail-screen.svg)
+![Detalle de evento](docs/screenshots/screenshot_detalles_evento.png)
 
 ### Mis entradas
 
-![Mis entradas](docs/screenshots/my-tickets-screen.svg)
+![Mis entradas](docs/screenshots/screenshot_mis_entradas.png)
 
 ### Panel de administracion
 
-![Panel de administracion](docs/screenshots/admin-dashboard-screen.svg)
+![Panel de administracion](docs/screenshots/screenshot_admin.png)
+
+### Crear evento
+
+![Crear evento](docs/screenshots/screenshot_crear_evento.png)
 
 ## Tecnologias utilizadas
 
