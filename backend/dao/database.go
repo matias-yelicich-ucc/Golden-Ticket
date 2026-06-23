@@ -73,6 +73,7 @@ func migrateAndPrepareDatabase(db *gorm.DB) error {
 	}
 
 	db.Exec("ALTER TABLE tickets MODIFY COLUMN event_id BIGINT UNSIGNED NULL")
+	db.Exec("ALTER TABLE events MODIFY COLUMN coordenadas TEXT")
 	if !db.Migrator().HasConstraint(&domain.Ticket{}, "fk_events_tickets") &&
 		!db.Migrator().HasConstraint(&domain.Ticket{}, "fk_tickets_event") {
 		db.Exec(`ALTER TABLE tickets ADD CONSTRAINT fk_events_tickets 

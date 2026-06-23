@@ -4,5 +4,4 @@ dist
 .env.local
 .git
 Dockerfile
-nginx.conf
 docker-compose*

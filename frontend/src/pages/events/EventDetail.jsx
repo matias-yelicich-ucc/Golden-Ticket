@@ -81,6 +81,18 @@ const formatCurrency = (value) =>
     maximumFractionDigits: 0,
   });
 
+const formatArgDate = (value) => {
+  if (!value) return 'Fecha pendiente';
+  const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+};
+
 const slugify = (title, id) => {
   const clean = (title || '')
     .toLowerCase()
@@ -100,8 +112,8 @@ const normalizeEvent = (dbEvent) => {
     subtitle: dbEvent.descripcion || 'Detalles del evento.',
     description: [dbEvent.descripcion || 'Sin descripción.'],
     category: dbEvent.categoria || 'Musica',
-    date: dbEvent.fecha,
-    fullDate: dbEvent.fecha,
+    date: formatArgDate(dbEvent.fecha),
+    fullDate: formatArgDate(dbEvent.fecha),
     timeRange: `${dbEvent.hora_inicio} - ${dbEvent.hora_fin}`,
     location: dbEvent.ubicacion,
     address: dbEvent.ubicacion,
@@ -118,7 +130,56 @@ const normalizeEvent = (dbEvent) => {
       },
     ],
     urlImagen: dbEvent.url_imagen,
+    coordenadas: dbEvent.coordenadas || '',
   };
+};
+
+const getMapEmbedUrl = (link, location) => {
+  if (!link || !link.trim()) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(location || '')}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+
+  const cleanLink = link.trim();
+
+  // 1. If it's an iframe tag, extract the src attribute
+  if (cleanLink.includes('<iframe')) {
+    const srcMatch = cleanLink.match(/src=["']([^"']+)["']/);
+    if (srcMatch && srcMatch[1]) {
+      return srcMatch[1];
+    }
+  }
+
+  // 2. If it's already an embed link
+  if (cleanLink.includes('/maps/embed')) {
+    return cleanLink;
+  }
+
+  // 3. Try to extract coordinates from URL (e.g. @-34.6011451,-58.3853118)
+  const coordsMatch = cleanLink.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (coordsMatch) {
+    const lat = coordsMatch[1];
+    const lng = coordsMatch[2];
+    return `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+
+  // 4. Try to extract coordinates from query parameters (e.g. q=-34.6011,-58.3853 or query=-34.6011,-58.3853)
+  const qCoordsMatch = cleanLink.match(/[?&](q|query|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (qCoordsMatch) {
+    const lat = qCoordsMatch[2];
+    const lng = qCoordsMatch[3];
+    return `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+
+  // 5. Try to extract simple coordinates (e.g. -31.4201, -64.1888 or -31,-64)
+  const simpleCoordsMatch = cleanLink.match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);
+  if (simpleCoordsMatch) {
+    const lat = simpleCoordsMatch[1];
+    const lng = simpleCoordsMatch[2];
+    return `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+
+  // 6. Fallback: use the link itself or the location as query
+  return `https://maps.google.com/maps?q=${encodeURIComponent(cleanLink)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 };
 
 function EventDetail() {
@@ -406,7 +467,6 @@ function EventDetail() {
           <section className="event-detail-copy">
             <h2>Sobre este evento</h2>
             {event.description.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-            <p>Este evento forma parte del catalogo cliente definido por la consigna y permite completar el flujo de consulta, detalle y compra.</p>
           </section>
 
           <section className="event-detail-capacity">
@@ -431,7 +491,7 @@ function EventDetail() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src={`https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                src={getMapEmbedUrl(event.coordenadas, event.location)}
               />
             </div>
           </section>

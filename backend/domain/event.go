@@ -12,7 +12,7 @@ type Event struct {
 	HoraInicio  string    `gorm:"type:varchar(50);not null" json:"hora_inicio"`
 	HoraFin     string    `gorm:"type:varchar(50);not null" json:"hora_fin"`
 	Ubicacion   string    `gorm:"type:varchar(255);not null" json:"ubicacion"`
-	Coordenadas string    `gorm:"type:varchar(100)" json:"coordenadas"`
+	Coordenadas string    `gorm:"type:text" json:"coordenadas"`
 	UrlImagen   string    `gorm:"type:varchar(255)" json:"url_imagen"`
 	Capacidad   int       `gorm:"not null" json:"capacidad"`
 	Precio      float64   `gorm:"type:decimal(10,2);not null;default:0.0" json:"precio"`

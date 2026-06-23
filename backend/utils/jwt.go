@@ -36,13 +36,13 @@ func GenerateToken(userID uint, rol string) (string, error) {
 
 	if expiration == 0 {
 		expHoursStr := os.Getenv("JWT_EXPIRATION_HOURS")
-		expHours := 24
+		expHours := 1
 		if expHoursStr != "" {
 			if hours, err := strconv.Atoi(expHoursStr); err == nil {
 				expHours = hours
 			}
 		}
-		expiration = time.Duration(expHours) * time.Hour
+		expiration = time.Duration(expHours) * time.Minute
 	}
 
 	claims := JWTClaims{

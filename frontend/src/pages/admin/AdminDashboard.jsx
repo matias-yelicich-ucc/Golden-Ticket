@@ -49,6 +49,18 @@ const TrashIcon = () => (
   </svg>
 );
 
+const formatArgDate = (value) => {
+  if (!value) return 'Fecha pendiente';
+  const normalized = value.includes('T') ? value : `${value}T00:00:00`;
+  const parsed = new Date(normalized);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(parsed);
+};
+
 const buildMetrics = (stats) => [
   {
     id: 'events',
@@ -258,7 +270,7 @@ function AdminDashboard() {
                         <p>{event.ubicacion}</p>
                       </div>
                     </div>
-                    <span className="admin-table-cell">{event.fecha} {event.hora_inicio}</span>
+                    <span className="admin-table-cell">{formatArgDate(event.fecha)} {event.hora_inicio}</span>
                     <span className="admin-table-cell">{event.capacidad}</span>
                     <div className="admin-sales-cell">
                       <span>{sold}</span>

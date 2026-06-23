@@ -50,6 +50,13 @@ const CrosshairIcon = () => (
   </svg>
 );
 
+const LinkIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+);
+
 const CloseIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M18 6 6 18" />
@@ -196,7 +203,7 @@ function AdminCreateEvent() {
     if (!form.startTime.trim()) nextErrors.startTime = 'La hora de inicio es obligatoria.';
     if (!form.endTime.trim()) nextErrors.endTime = 'La hora de fin es obligatoria.';
     if (!form.location.trim()) nextErrors.location = 'La ubicacion es obligatoria.';
-    if (!form.coordinates.trim()) nextErrors.coordinates = 'Las coordenadas son obligatorias.';
+    if (!form.coordinates.trim()) nextErrors.coordinates = 'El link de Google Maps es obligatorio.';
     if (!form.capacity.trim()) nextErrors.capacity = 'La capacidad es obligatoria.';
     else if (!/^\d+$/.test(form.capacity)) nextErrors.capacity = 'La capacidad debe contener solo numeros.';
     else if (form.capacity.length > MAX_CAPACITY_DIGITS) nextErrors.capacity = `La capacidad no puede superar los ${MAX_CAPACITY_DIGITS} digitos.`;
@@ -392,13 +399,13 @@ function AdminCreateEvent() {
             </div>
 
             <div className="admin-field">
-              <label htmlFor="event-coordinates">Coordenadas</label>
+              <label htmlFor="event-coordinates">Link de Google Maps</label>
               <div className="admin-input-icon">
-                <span><CrosshairIcon /></span>
+                <span><LinkIcon /></span>
                 <input
                   id="event-coordinates"
                   className={errors.coordinates ? 'has-error' : ''}
-                  placeholder="-31.4201, -64.1888"
+                  placeholder="https://maps.app.goo.gl/... o código de inserción"
                   value={form.coordinates}
                   onChange={(event) => handleChange('coordinates', event.target.value)}
                 />

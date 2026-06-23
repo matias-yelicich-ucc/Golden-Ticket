@@ -27,6 +27,7 @@ dist-ssr
 backend/.env
 backend/main
 backend/*.exe
+backend/coverage
 
 # SDD Artifacts
 /openspec/
