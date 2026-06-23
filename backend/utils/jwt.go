@@ -26,24 +26,15 @@ func getJWTSecret() []byte {
 
 // GenerateToken creates a signed JWT with user details
 func GenerateToken(userID uint, rol string) (string, error) {
-	var expiration time.Duration
+	expirationMinutes := 1440
 	expMinutesStr := os.Getenv("JWT_EXPIRATION_MINUTES")
 	if expMinutesStr != "" {
 		if minutes, err := strconv.Atoi(expMinutesStr); err == nil {
-			expiration = time.Duration(minutes) * time.Minute
+			expirationMinutes = minutes
 		}
 	}
 
-	if expiration == 0 {
-		expHoursStr := os.Getenv("JWT_EXPIRATION_HOURS")
-		expHours := 24
-		if expHoursStr != "" {
-			if hours, err := strconv.Atoi(expHoursStr); err == nil {
-				expHours = hours
-			}
-		}
-		expiration = time.Duration(expHours) * time.Hour
-	}
+	expiration := time.Duration(expirationMinutes) * time.Minute
 
 	claims := JWTClaims{
 		UserID: userID,
