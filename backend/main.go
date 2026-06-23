@@ -14,54 +14,39 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
-	// Load .env file
+func loadEnv() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, relying on system environment variables")
 	}
+}
 
-	// Initialize Database
-	dao.InitDB()
-
-	// Setup layers
-	userDAO := dao.NewUserDAO()
-	authService := services.NewAuthService(userDAO)
-	authController := controllers.NewAuthController(authService)
-
-	eventDAO := dao.NewEventDAO()
-	eventService := services.NewEventService(eventDAO)
-	eventController := controllers.NewEventController(eventService)
-
-	ticketDAO := dao.NewTicketDAO()
-	ticketService := services.NewTicketService(ticketDAO)
-	ticketController := controllers.NewTicketController(ticketService)
-
-	// Setup Router
+func buildRouter(
+	authController *controllers.AuthController,
+	eventController *controllers.EventController,
+	ticketController *controllers.TicketController,
+) *gin.Engine {
 	r := gin.Default()
 
-	// Simple CORS middleware
 	r.Use(func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
+		if c.Request.Method == http.MethodOptions {
+			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
 
 		c.Next()
 	})
 
-	// Public Routes
 	r.POST("/register", authController.Register)
 	r.POST("/login", authController.Login)
 	r.GET("/events", eventController.List)
 	r.GET("/events/:id", eventController.GetByID)
 	r.GET("/dashboard-stats", eventController.GetAdminDashboardStats)
 
-	// Protected routes (to verify JWT and roles middleware)
 	protected := r.Group("/")
 	protected.Use(middleware.AuthMiddleware())
 	{
@@ -81,7 +66,6 @@ func main() {
 		protected.POST("/my-tickets/:id/cancel", ticketController.Cancel)
 		protected.DELETE("/my-tickets/:id", ticketController.Cancel)
 
-		// Admin-only test route
 		adminOnly := protected.Group("/admin")
 		adminOnly.Use(middleware.AuthorizeRole("administrador", "admin"))
 		{
@@ -92,11 +76,39 @@ func main() {
 		}
 	}
 
-	// Start server
+	return r
+}
+
+func getServerPort() string {
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
-		port = "8080"
+		return "8080"
 	}
+	return port
+}
+
+func buildApplication() *gin.Engine {
+	userDAO := dao.NewUserDAO()
+	authService := services.NewAuthService(userDAO)
+	authController := controllers.NewAuthController(authService)
+
+	eventDAO := dao.NewEventDAO()
+	eventService := services.NewEventService(eventDAO)
+	eventController := controllers.NewEventController(eventService)
+
+	ticketDAO := dao.NewTicketDAO()
+	ticketService := services.NewTicketService(ticketDAO)
+	ticketController := controllers.NewTicketController(ticketService)
+
+	return buildRouter(authController, eventController, ticketController)
+}
+
+func main() {
+	loadEnv()
+	dao.InitDB()
+
+	r := buildApplication()
+	port := getServerPort()
 
 	log.Printf("Server starting on port %s...", port)
 	if err := r.Run(":" + port); err != nil {
