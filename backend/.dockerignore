@@ -1,0 +1,7 @@
+.git
+.env
+.env.local
+*.exe
+tmp/
+docker-compose*
+Dockerfile
